@@ -36,3 +36,4 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
         if check("Want me to take you to the page so you can update it yourself?\ny/n\n"):
             webbrowser.open("link", new=2, autoraise=True)
     input("You can press enter to continue running the bot with this version or close the program now.")
+
