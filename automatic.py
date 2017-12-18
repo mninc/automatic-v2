@@ -64,6 +64,38 @@ class GlobalFuncs:
         if name[:4] == "The ":
             name = name[4:]
 
+        # Assume it's unique
+        quality = 6
+        for _quality in qualities:
+            if name.startswith(_quality):
+                quality = qualities[_quality]
+                name = name[len(_quality) + 1:]
+
+        # Assume it has no killstreak
+        killstreak = 0
+        for _killstreak in killstreaks:
+            if name.startswith(_killstreak):
+                killstreak = killstreaks[_killstreak]
+                name = name[len(_killstreak) + 1:]
+
+        # Assume it's not australium
+        australium = -1
+        if name.startswith("Australium"):
+            australium = 1
+            name = name[11:]
+
+        data = {"key": info.settings["apikey"],
+                "steamid": user,
+                "item_names": True,
+                "page_size": 30,
+                "killstreak_tier": str(killstreak),
+                "australium": str(australium),
+                "quality": str(quality),
+                "craftable": str(craftable),
+                "item": name}
+        return requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
+
+
 
 # Import everything. This is pretty messy - I plan on fixing it soon. Suggestions would be nice
 try:
@@ -96,6 +128,7 @@ except ImportError as e:
 # Displays any text that needs displaying. For future use if needed
 display = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/print.txt").text
 print(display)
+
 
 # Listens for keystrokes without disrupting the main thread. This toggles all the options
 def listener():
@@ -146,7 +179,22 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
             exit()
     input("You can press enter to continue running the bot with this version or close the program now.")
 
-halves = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").json()
+# Load some prebuilt half-scrap items and effect name to number reference
+halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").text)
+effects = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/effects.json").json()
+qualities = {"Genuine": 1,
+             "Self-Made": 9,
+             "Strange": 11,
+             "Unique": 6,
+             "Unusual": 5,
+             "Vintage": 3,
+             "Haunted": 13,
+             "Collector's": 14}
+killstreaks = {"None": 0,
+               "Killstreak": 1,
+               "Specialized Killstreak": 2,
+               "Professional Killstreak": 3}
+
 
 class Settings:
     def __init__(self):

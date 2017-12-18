@@ -1,4 +1,58 @@
-with open("halves.json", "w") as f:
-    import json
-    json.dump(['Air Strike', 'Air Strike', "Ali Baba's Wee Booties", 'Ambassador', 'Ambassador', 'Amputator', 'Amputator', 'Atomizer', 'Axtinguisher', 'Axtinguisher', 'B.A.S.E. Jumper', 'B.A.S.E. Jumper', "Baby Face's Blaster", "Baby Face's Blaster", 'Back Scatter', 'Back Scatter', 'Back Scratcher', 'Backburner', 'Backburner', "Battalion's Backup", 'Bazaar Bargain', "Beggar's Bazooka", "Beggar's Bazooka", 'Big Earner', 'Black Box', 'Black Box', 'Blutsauger', 'Blutsauger', 'Bonk! Atomic Punch', 'Bonk! Atomic Punch', 'Bootlegger', 'Boston Basher', 'Brass Beast', 'Buff Banner', 'Buff Banner', 'Buffalo Steak Sandvich', 'Buffalo Steak Sandvich', 'Bushwacka', 'Bushwacka', 'Candy Cane', "Chargin' Targe", "Chargin' Targe", 'Claidheamh Mòr', 'Claidheamh Mòr', 'Classic', 'Classic', "Cleaner's Carbine", "Cleaner's Carbine", 'Cloak and Dagger', 'Cloak and Dagger', 'Concheror', "Conniver's Kunai", 'Cow Mangler 5000', 'Cozy Camper', 'Crit-a-Cola', 'Crit-a-Cola', "Crusader's Crossbow", 'Dalokohs Bar', "Darwin's Danger Shield", "Darwin's Danger Shield", 'Dead Ringer', 'Dead Ringer', 'Degreaser', 'Degreaser', 'Detonator', 'Diamondback', 'Direct Hit', 'Direct Hit', 'Disciplinary Action', 'Enforcer', 'Enforcer', 'Equalizer', 'Equalizer', 'Escape Plan', 'Escape Plan', 'Eureka Effect', 'Eureka Effect', 'Eviction Notice', 'Eyelander', 'Family Business', "Fan O'War", 'Fists of Steel', 'Flare Gun', 'Flare Gun', 'Flying Guillotine', 'Flying Guillotine', 'Force-A-Nature', 'Force-A-Nature', 'Fortified Compound', 'Frontier Justice', 'Gloves of Running Urgently', 'Gloves of Running Urgently', 'Gunboats', 'Gunslinger', 'Gunslinger', 'Half-Zatoichi', "Hitman's Heatmaker", "Hitman's Heatmaker", 'Holiday Punch', 'Holy Mackerel', 'Holy Mackerel', 'Homewrecker', 'Huntsman', 'Huntsman', 'Huo-Long Heater', 'Huo-Long Heater', 'Iron Bomber', 'Jag', 'Jag', 'Jarate', 'Jarate', 'Killing Gloves of Boxing', 'Killing Gloves of Boxing', 'Kritzkrieg', 'Kritzkrieg', "L'Etranger", "L'Etranger", 'Liberty Launcher', 'Liberty Launcher', 'Loch-n-Load', 'Lollichop', 'Loose Cannon', 'Loose Cannon', 'Machina', 'Mad Milk', 'Mad Milk', 'Manmelter', 'Mantreads', 'Market Gardener', 'Market Gardener', 'Natascha', 'Natascha', 'Neon Annihilator', "Nessie's Nine Iron", 'Noise Maker - Winter Holiday', 'Original', 'Overdose', 'Pain Train', 'Panic Attack', 'Persian Persuader', 'Persian Persuader', 'Phlogistinator', 'Pomson 6000', 'Postal Pummeler', 'Powerjack', 'Powerjack', "Pretty Boy's Pocket Pistol", "Pretty Boy's Pocket Pistol", 'Quick-Fix', 'Quick-Fix', 'Quickiebomb Launcher', 'Rainblower', 'Rainblower', 'Razorback', 'Razorback', 'Red-Tape Recorder', 'Red-Tape Recorder', 'Reinforced Robot Bomb Stabilizer', 'Reinforced Robot Emotion Detector', 'Reinforced Robot Humor Suppression Pump', 'Rescue Ranger', 'Rescue Ranger', 'Reserve Shooter', 'Reserve Shooter', 'Righteous Bison', 'Rocket Jumper', 'Rocket Jumper', 'Sandman', 'Sandman', 'Sandvich', 'Sandvich', 'Scorch Shot', 'Scorch Shot', "Scotsman's Skullcutter", 'Scottish Handshake', 'Scottish Resistance', 'Scottish Resistance', 'Shahanshah', 'Shahanshah', 'Sharpened Volcano Fragment', 'Short Circuit', 'Short Circuit', 'Shortstop', 'Shortstop', 'Soda Popper', 'Soda Popper', 'Solemn Vow', 'Southern Hospitality', 'Southern Hospitality', 'Splendid Screen', 'Splendid Screen', 'Spy-cicle', 'Spy-cicle', 'Sticky Jumper', 'Sticky Jumper', 'Sun-on-a-Stick', 'Sydney Sleeper', 'Sydney Sleeper', 'Third Degree', 'Tide Turner', 'Tomislav', "Tribalman's Shiv", "Tribalman's Shiv", 'Ubersaw', 'Ubersaw', 'Ullapool Caber', 'Ullapool Caber', 'Vaccinator', 'Vita-Saw', 'Voodoo-Cursed Bag Of Quicklime', 'Voodoo-Cursed Nail', 'Voodoo-Cursed Novelty Bass', 'Voodoo-Cursed Old Boot', 'Voodoo-Cursed Robot Arm', 'Voodoo-Cursed Skeleton', 'Voodoo-Cursed Sticky-Bomb', "Warrior's Spirit", "Warrior's Spirit", 'Widowmaker', 'Widowmaker', 'Winger', 'Wrangler', 'Wrangler', 'Wrap Assassin', 'Wrap Assassin', 'Your Eternal Reward', 'Your Eternal Reward']
-, f)
+import requests
+halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").text)
+effects = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/effects.json").json()
+qualities = {"Genuine": 1,
+             "Self-Made": 9,
+             "Strange": 11,
+             "Unique": 6,
+             "Unusual": 5,
+             "Vintage": 3,
+             "Haunted": 13,
+             "Collector's": 14}
+killstreaks = {"None": 0,
+               "Killstreak": 1,
+               "Specialized Killstreak": 2,
+               "Professional Killstreak": 3}
+def search(name, user, key):
+    if name[:4] == "The ":
+        name = name[4:]
+    if name [:14] == "Non-Craftable ":
+        name = name[14:]
+        craftable = -1
+    else:
+        craftable = 1
+    if name[:4] == "The ":
+        name = name[4:]
+
+    # Assume it's unique
+    quality = 6
+    for _quality in qualities:
+        if name.startswith(_quality):
+            quality = qualities[_quality]
+            name = name[len(_quality) + 1:]
+
+    # Assume it has no killstreak
+    killstreak = 0
+    for _killstreak in killstreaks:
+        if name.startswith(_killstreak):
+            killstreak = killstreaks[_killstreak]
+            name = name[len(_killstreak) + 1:]
+
+    # Assume it's not australium
+    australium = -1
+    if name.startswith("Australium"):
+        australium = 1
+        name = name[11:]
+
+    data = {"key": key,
+            "steamid": user,
+            "item_names": True,
+            "page_size": 30,
+            "killstreak_tier": str(killstreak),
+            "australium": str(australium),
+            "quality": str(quality),
+            "craftable": str(craftable),
+            "item": name}
+    return requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
+
+print(search("Strange Specialized Killstreak Australium Rocket Launcher","76561198438349516", "59f49df4cf6c754c660e1bba"))
