@@ -24,6 +24,14 @@ class GlobalFuncs:
             webbrowser.open(url, new=2, autoraise=True)
             return input("Please enter your " + thing + ".")
 
+    @staticmethod
+    def name_item(item):
+        pass
+
+    @staticmethod
+    def search(name):
+        pass
+
 
 try:
     import time
@@ -37,7 +45,9 @@ try:
     import platform
     if platform.release() == "Windows":
         import msvcrt
+        commands = True
     else:
+        commands = False
         print("Platform is not Windows, toggling will not work. This will be fixed in a future release.")
 except ImportError as e:
     print("You have not installed the " + str(e)[16:] + " package.")
@@ -93,6 +103,7 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
 
 class Settings:
     def __init__(self):
+        self.lasthb = 0
         self.settings = {}
         self.key = None
         try:
@@ -147,6 +158,9 @@ class Settings:
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
                                                         "steam id")
+                self.settings["acceptgifts"] = False
+                self.settings["owners"] = []
+                self.settings["accept_any_sell_order"] = False
 
                 while True:
                     self.key = input(
@@ -185,11 +199,25 @@ class Settings:
                 print(x)
                 f.write(x)
 
+    def heartbeat(self):
+        response = requests.post("https://backpack.tf/api/aux/heartbeat/v1", data={"token": self.settings["token"]})\
+            .json()
+        if "bumped" in response:
+            if int(response["bumped"]) != 0:
+                print("Sent a heartbeat to backpack.tf. Bumped " + str(response["bumped"]) + " listings.")
+            else:
+                print("Sent a heartbeat to backpack.tf.")
+        else:
+            print("Error sending heartbeat: " + json.dumps(response))
+
 
 info = Settings()
 
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
 
+if commands:
+    commandListener = threading.Thread(target=listener)
+    commandListener.start()
 
 steam_client = pytrade.login.AsyncClient(info.settings["username"], info.settings["password"])
 manager = pytrade.client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
@@ -200,7 +228,43 @@ manager = pytrade.client.TradeManager(info.settings["sid"], key=info.settings["s
 async def logon():
     print("Logged in.")
 
+@manager.on("end_poll")
+async def poll_end():
+
+
 
 @manager.on("new_trade")
 async def new_offer(offer):
-    print("Received offer " + offer.tradeofferid)
+    decline = False
+    accept = False
+    handled = False
+    their_id = offer.steamid_other.toString()
+    response = requests.get("https://backpack.tf/api/users/info/v1", json={"key": info.settings["apikey"],
+                                                                           "steamids": [their_id]}).json()
+    print("Received offer " + offer.tradeofferid + " from " + response["users"][their_id]["name"] + ".")
+    user = response["users"][their_id]["bans"]
+    if their_id in info.settings["owners"]:
+        print("Accepting Trade: Offer from owner")
+        accept = True
+        handled = True
+    elif "steamrep_scammer" in user or "all" in user:
+        print("Declining Trade: User is a banned on steamrep or backpack.tf")
+        decline = True
+        handled = True
+    elif not offer.items_to_give and info.settings["acceptgifts"]:
+        print("Accepting Trade: not losing any items.")
+        accept = True
+        handled = True
+    else:
+        lose_val = 0
+        gain_val = 0
+        for item in offer.items_to_receive:
+            name = item.market_name
+            if name in currencies:
+                gain_val += currencies[name]
+            else:
+
+
+
+
+
