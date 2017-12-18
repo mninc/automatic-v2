@@ -1,7 +1,9 @@
+# Version number. This is compared to the github version number later
 version = "0.0.1"
 
-
+# Functions to be used anywhere
 class GlobalFuncs:
+    # Basic function to ask for a yes or no answer. Returns True for yes, False for no
     @staticmethod
     def check(ask):
         while True:
@@ -13,6 +15,8 @@ class GlobalFuncs:
             else:
                 print("Please enter yes or no.")
 
+    # Basic function for guiding the user through the setup process by giving them a description of what to do and a
+    # website to do it at. Returns what is being looked for
     @staticmethod
     def show(url, instructions, thing):
         ans = input("Please enter your " + thing + ". If you don't know where to find this enter 'help'.")
@@ -24,15 +28,44 @@ class GlobalFuncs:
             webbrowser.open(url, new=2, autoraise=True)
             return input("Please enter your " + thing + ".")
 
+    # Parse the item object to form an agreeable name to use. Returns the name
     @staticmethod
     def name_item(item):
-        pass
+        name = item.market_name
+        craftable = True
+        effect = ""
+        if item.descriptions != list():
+            for line in item.descriptions:
+                if line["value"] == "( Not Usable in Crafting )":
+                    craftable = False
+        if name[:8] == "Unusual ":
+            name = name[8:]
+            for line in item.descriptions:
+                if line["value"].startswith("★ Unusual Effect: "):
+                    effect = line["value"][18:]
+        if not craftable and effect:
+            name = "Non-Craftable " + effect + " " + name
+        elif not craftable:
+            name = "Non-Craftable " + name
+        elif effect:
+            name = effect + " " + name
+        return name
 
+    # Returns a classifieds search for the item specified
     @staticmethod
-    def search(name):
-        pass
+    def search(name, user):
+        if name[:4] == "The ":
+            name = name[4:]
+        if name [:14] == "Non-Craftable ":
+            name = name[14:]
+            craftable = -1
+        else:
+            craftable = 1
+        if name[:4] == "The ":
+            name = name[4:]
 
 
+# Import everything. This is pretty messy - I plan on fixing it soon. Suggestions would be nice
 try:
     import time
     import webbrowser
@@ -60,7 +93,11 @@ except ImportError as e:
     input("Press enter to exit")
     exit(0)
 
+# Displays any text that needs displaying. For future use if needed
+display = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/print.txt").text
+print(display)
 
+# Listens for keystrokes without disrupting the main thread. This toggles all the options
 def listener():
     chars = []
     while True:
@@ -68,10 +105,17 @@ def listener():
         if letter == "\r":
             word = "".join(chars)
             print("\n")
-            if word.startswith("toggle"):
+            if word.startswith("change"):
+                # Change an item in the settings array
+                word = word[7:]
+                words = word.split(" ")
+                info.update(words[0], words[1:])
+            elif word.startswith("toggle"):
+                # Toggle a boolean in the settings array
                 word = word[7:]
                 if word.startswith("acceptgifts"):
                     info.update("acceptgifts", not info.settings["acceptgifts"])
+
             else:
                 print("I'm unsure what you mean.")
             chars = []
@@ -79,10 +123,12 @@ def listener():
             chars.append(letter)
 
 
+# Checks if this is the most recent version
 if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__").text[:-1] != version:
     print("You are not running the current version of the program.")
     print("You really should be. It's better. I promise.")
     if GlobalFuncs.check("Want me to download it for you?\ny/n\n"):
+        # Downloads the new version
         new = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py").text
         with open("automatic.py", "w") as f:
             f.write(new)
@@ -91,6 +137,7 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
         exit()
     else:
         if GlobalFuncs.check("Want me to take you to the page so you can update it yourself?\ny/n\n"):
+            # Leads the user to the page to download the new version
             input("I'll take you to the page when you press enter. Right-click the page, click Save As... and choose "
                   "the correct file location.")
             webbrowser.open("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py", new=2,
@@ -99,7 +146,7 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
             exit()
     input("You can press enter to continue running the bot with this version or close the program now.")
 
-
+halves = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").json()
 
 class Settings:
     def __init__(self):
@@ -185,19 +232,27 @@ class Settings:
             exit()
 
     def update(self, var, newval):
-        self.settings[var] = newval
-        if not self.key:
-            with open("settings.json", "w") as f:
-                json.dump(self.settings, f)
+        if var in self.settings:
+            if var != "acceptgifts":
+                self.settings[var] = newval
+                if not self.key:
+                    with open("settings.json", "w") as f:
+                        json.dump(self.settings, f)
+                else:
+                    with open("settings.json", "wb") as f:
+                        _settings = json.dumps(self.settings)
+                        while len(_settings) % 8 != 0:
+                            _settings += " "
+                        des = DES.new(self.key.encode(), DES.MODE_ECB)
+                        x = des.encrypt(_settings.encode())
+                        print(x)
+                        f.write(x)
+            else:
+                # Trying to change a boolean to a string
+                print("This option is toggleable and cannot be manually set. Please use 'toggle' " + var + " instead.")
         else:
-            with open("settings.json", "wb") as f:
-                _settings = json.dumps(self.settings)
-                while len(_settings) % 8 != 0:
-                    _settings += " "
-                des = DES.new(self.key.encode(), DES.MODE_ECB)
-                x = des.encrypt(_settings.encode())
-                print(x)
-                f.write(x)
+            # Trying to change an option not in the settings array
+            print("That is not an option that can be changed.")
 
     def heartbeat(self):
         response = requests.post("https://backpack.tf/api/aux/heartbeat/v1", data={"token": self.settings["token"]})\
@@ -209,6 +264,7 @@ class Settings:
                 print("Sent a heartbeat to backpack.tf.")
         else:
             print("Error sending heartbeat: " + json.dumps(response))
+        self.lasthb = time.time()
 
 
 info = Settings()
@@ -228,9 +284,12 @@ manager = pytrade.client.TradeManager(info.settings["sid"], key=info.settings["s
 async def logon():
     print("Logged in.")
 
+
 @manager.on("end_poll")
 async def poll_end():
-
+    if time.time() - info.lasthb > 100:
+        # If it has been 100 seconds since sending the last heartbeat
+        info.heartbeat()
 
 
 @manager.on("new_trade")
@@ -263,6 +322,8 @@ async def new_offer(offer):
             if name in currencies:
                 gain_val += currencies[name]
             else:
+                name = GlobalFuncs.name_item(item)
+                response = GlobalFuncs.search(name, info.settings["sid"])
 
 
 
