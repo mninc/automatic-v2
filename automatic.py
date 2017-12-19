@@ -1,5 +1,39 @@
+# Imports
+import time
+import webbrowser
+import requests
+import json
+import threading
+import pip
+import importlib
+import asyncio
+from random import randint
+try:
+    import msvcrt
+    commands = True
+except ImportError:
+    commands = False
+    print("Platform is not Windows, toggling will not work. This will be fixed in a future release.")
+    msvcrt = None
+
+
+nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "Crypto"}
+
+for package in nondefault_packages:
+    try:
+        importlib.import_module(package)
+    except (ModuleNotFoundError, ImportError):
+        print("Package '" + package + "' not found, will attempt to install now.")
+        pip.main(["install", nondefault_packages[package]])
+        input("Please restart the program to continue.\n")
+        exit()
+
+from pytrade import login, client
+from Crypto.Cipher import DES
+
 # Version number. This is compared to the github version number later
-version = "0.0.1"
+version = "0.1.0"
+
 
 # Functions to be used anywhere
 class GlobalFuncs:
@@ -19,14 +53,14 @@ class GlobalFuncs:
     # website to do it at. Returns what is being looked for
     @staticmethod
     def show(url, instructions, thing):
-        ans = input("Please enter your " + thing + ". If you don't know where to find this enter 'help'.")
+        ans = input("Please enter your " + thing + ". If you don't know where to find this enter 'help'.\n")
         if ans != "help":
             return ans
         else:
             print(instructions)
-            input("Press enter to go to this page.")
+            input("Press enter to go to this page.\n")
             webbrowser.open(url, new=2, autoraise=True)
-            return input("Please enter your " + thing + ".")
+            return input("Please enter your " + thing + ".\n")
 
     # Parse the item object to form an agreeable name to use. Returns the name
     @staticmethod
@@ -56,7 +90,7 @@ class GlobalFuncs:
     def search(name, user):
         if name[:4] == "The ":
             name = name[4:]
-        if name [:14] == "Non-Craftable ":
+        if name[:14] == "Non-Craftable ":
             name = name[14:]
             craftable = -1
         else:
@@ -92,38 +126,92 @@ class GlobalFuncs:
                 "australium": str(australium),
                 "quality": str(quality),
                 "craftable": str(craftable),
-                "item": name}
-        return requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
+                "item": name,
+                "fold": 0}
+        while True:
+            response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
+            if "response" in response:
+                time.sleep(randint(5,10))
+            else:
+                break
 
+        return response
 
+    @staticmethod
+    def process_command(command):
+        if command.startswith("change"):
+            # Change an item in the settings array
+            command = command[7:]
+            words = command.split(" ")
+            if len(words) == 1:
+                if words[0] in info.settings:
+                    print(str(info.settings[words[0]]))
+                else:
+                    print("Unexpected setting")
+            else:
+                info.update(words[0], words[1][1:])
+        elif command.startswith("toggle"):
+            # Toggle a boolean in the settings array
+            command = command[7:]
+            if command.startswith("acceptgifts"):
+                info.update("acceptgifts", not info.settings["acceptgifts"])
+            elif command.startswith("accept_any_sell_order"):
+                info.update("accept_any_sell_order", not info.settings["accept_any_sell_order"])
+            elif command.startswith("currency_exchange"):
+                info.update("currency_exchange", not info.settings["currency_exchange"])
+            elif command.startswith("use_my_key_price"):
+                info.update("use_my_key_price", not info.settings["use_my_key_price"])
+        elif command.startswith("add"):
+            # Add a variable to a list
+            command = command[4:]
+            if command.startswith("owners"):
+                command = command[7:]
+                info.settings["owners"].append(command)
+                info.update("owners", info.settings["owners"])
+        elif command.startswith("remove"):
+            # Remove a variable from a list
+            command = command[7:]
+            if command.startswith("owners"):
+                command = command[7:]
+                if command in info.settings["owners"]:
+                    info.settings["owners"].remove(command)
+                    info.update("owners", info.settings["owners"])
+                else:
+                    print("This variable is not in that list")
+        elif command.startswith("help"):
+            print("Displaying the help page...")
+            print("""
+Commands:
+    help - Displays this message
+    change - Changes the setting specified to something else (eg 'change username newuser' would change your 
+                                                              username to 'newuser')
+             Leaving the value to change to will display the current value
+             Settings to change - username
+                                  password
+                                  apikey - backpack.tf api key
+                                  sapikey - steam api key
+                                  token - backpack.tf user token
+                                  identity_secret
+                                  sid - your steam id64
+    toggle - Switches the setting from true to false or vice versa
+             To view the current value of the setting use the 'change' command
+             Settings to change - acceptgifts - accept trades where you lose no items
+                                  accept_any_sell_order - sell items from your inventory even if that specific item 
+                                                          doesn't have a listing. Setting this to false will stop any 
+                                                          possible bugs making you lose money when selling items
+                                  currency_exchange - allow users to pay with ref when you ask for keys or vice versa. 
+                                                      Uses the backpack.tf price by default
+                                  use_my_key_price - uses the price on your sell or buy listings for keys. 
+                                                     'currency_exchange' must be set to True for this to work
+    add - Adds a variable to a list. Lists can be displayed with the 'change' command
+          Settings to change - owners - a list of id64s whose offers will automatically be accepted
+    remove - Removes a variable from a list. This item must already be in the list for this to work
+             Settings to change - owners
+    """)
 
-# Import everything. This is pretty messy - I plan on fixing it soon. Suggestions would be nice
-try:
-    import time
-    import webbrowser
-    import pytrade
-    import requests
-    import json
-    import base64
-    from Crypto.Cipher import DES
-    import threading
-    import platform
-    if platform.release() == "Windows":
-        import msvcrt
-        commands = True
-    else:
-        commands = False
-        print("Platform is not Windows, toggling will not work. This will be fixed in a future release.")
-except ImportError as e:
-    print("You have not installed the " + str(e)[16:] + " package.")
-    print("You'll have to go back to the installation page and check you did everything.")
-    if GlobalFuncs.check("Want me to take you there?\nyes/no\n"):
-        webbrowser.open("https://github.com/mninc/automatic-v2/blob/master/README.md", new=2, autoraise=True)
-    else:
-        print("Well, if you want to go there anyway you can just paste in this link: "
-              "https://github.com/mninc/automatic-v2/blob/master/README.md")
-    input("Press enter to exit")
-    exit(0)
+        else:
+            print("I'm unsure what you mean.")
+
 
 # Displays any text that needs displaying. For future use if needed
 display = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/print.txt").text
@@ -138,19 +226,7 @@ def listener():
         if letter == "\r":
             word = "".join(chars)
             print("\n")
-            if word.startswith("change"):
-                # Change an item in the settings array
-                word = word[7:]
-                words = word.split(" ")
-                info.update(words[0], words[1:])
-            elif word.startswith("toggle"):
-                # Toggle a boolean in the settings array
-                word = word[7:]
-                if word.startswith("acceptgifts"):
-                    info.update("acceptgifts", not info.settings["acceptgifts"])
-
-            else:
-                print("I'm unsure what you mean.")
+            GlobalFuncs.process_command(word)
             chars = []
         else:
             chars.append(letter)
@@ -201,13 +277,19 @@ class Settings:
         self.lasthb = 0
         self.settings = {}
         self.key = None
+        self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price"]
         try:
             with open("settings.json", "r") as f:
                 self.settings = json.load(f)
         except (json.decoder.JSONDecodeError, UnicodeDecodeError):
             with open("settings.json", "rb") as f:
                 print("File is encrypted.")
-                self.key = input("Please enter your key.")
+                while True:
+                    self.key = input("Please enter the 8 characters to decrypt your data.\n")
+                    if len(self.key) == 8:
+                        break
+                    else:
+                        print("Key needs to be 8 characters.")
                 des = DES.new(self.key.encode(), DES.MODE_ECB)
                 x = des.decrypt(f.read())
                 x = x.decode().strip()
@@ -247,8 +329,8 @@ class Settings:
                                                                     "instructions "
                                                                     "on this page to get this, but it's likely you "
                                                                     "won't. Leave this blank if you can't get it. If "
-                                                                    "you don't enter this, trades will not be confirmed "
-                                                                    "automatically.",
+                                                                    "you don't enter this, trades will not be confirmed"
+                                                                    " automatically.",
                                                                     "identity secret")
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
@@ -256,11 +338,13 @@ class Settings:
                 self.settings["acceptgifts"] = False
                 self.settings["owners"] = []
                 self.settings["accept_any_sell_order"] = False
+                self.settings["currency_exchange"] = False
+                self.settings["use_my_key_price"] = False
 
                 while True:
                     self.key = input(
                         "Please enter 8 characters to encrypt your data. You will have to enter this key every time "
-                        "you start the bot. If you do not want to encrypt this data, leave this blank.")
+                        "you start the bot. If you do not want to encrypt this data, leave this blank.\n")
                     if len(self.key) == 8 or len(self.key) == 0:
                         break
                     else:
@@ -268,20 +352,21 @@ class Settings:
                 if len(self.key) == 0:
                     with open("settings.json", "w") as f:
                         json.dump(self.settings, f)
-                with open("settings.json", "wb") as f:
-                    _settings = json.dumps(self.settings)
-                    while len(_settings) % 8 != 0:
-                        _settings += " "
-                    des = DES.new(self.key.encode(), DES.MODE_ECB)
-                    x = des.encrypt(_settings.encode())
-                    f.write(x)
+                else:
+                    with open("settings.json", "wb") as f:
+                        _settings = json.dumps(self.settings)
+                        while len(_settings) % 8 != 0:
+                            _settings += " "
+                        des = DES.new(self.key.encode(), DES.MODE_ECB)
+                        x = des.encrypt(_settings.encode())
+                        f.write(x)
         if not self.settings:
             input("Settings not present. Exiting program...")
             exit()
 
     def update(self, var, newval):
         if var in self.settings:
-            if var != "acceptgifts":
+            if var not in self.bools:
                 self.settings[var] = newval
                 if not self.key:
                     with open("settings.json", "w") as f:
@@ -295,6 +380,7 @@ class Settings:
                         x = des.encrypt(_settings.encode())
                         print(x)
                         f.write(x)
+                print("Successfully updated " + var + ".")
             else:
                 # Trying to change a boolean to a string
                 print("This option is toggleable and cannot be manually set. Please use 'toggle' " + var + " instead.")
@@ -318,13 +404,15 @@ class Settings:
 info = Settings()
 
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
+response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
+keys = response["response"]["currencies"]["keys"]["price"]["value"]
 
 if commands:
     commandListener = threading.Thread(target=listener)
     commandListener.start()
 
-steam_client = pytrade.login.AsyncClient(info.settings["username"], info.settings["password"])
-manager = pytrade.client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
+steam_client = login.AsyncClient(info.settings["username"], info.settings["password"])
+manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
                                       identity_secret=info.settings["identity_secret"], poll_delay=10)
 
 
@@ -345,11 +433,16 @@ async def new_offer(offer):
     decline = False
     accept = False
     handled = False
+    names_receiving = []
+    names_losing = []
     their_id = offer.steamid_other.toString()
     response = requests.get("https://backpack.tf/api/users/info/v1", json={"key": info.settings["apikey"],
-                                                                           "steamids": [their_id]}).json()
+                                                                           "steamids": their_id}).json()
     print("Received offer " + offer.tradeofferid + " from " + response["users"][their_id]["name"] + ".")
-    user = response["users"][their_id]["bans"]
+    if "bans" in response["users"][their_id]:
+        user = response["users"][their_id]["bans"]
+    else:
+        user = []
     if their_id in info.settings["owners"]:
         print("Accepting Trade: Offer from owner")
         accept = True
@@ -364,15 +457,113 @@ async def new_offer(offer):
         handled = True
     else:
         lose_val = 0
+        lose_valk = 0
         gain_val = 0
+        gain_valk = 0
         for item in offer.items_to_receive:
             name = item.market_name
             if name in currencies:
+                names_receiving.append(name)
                 gain_val += currencies[name]
             else:
                 name = GlobalFuncs.name_item(item)
+                names_receiving.append(name)
                 response = GlobalFuncs.search(name, info.settings["sid"])
+                if response["buy"]["total"] > 0:
+                    listing = response["buy"]["listings"][0]["currencies"]
+                    if "metal" in listing:
+                        gain_val += listing["metal"]
+                    if "keys" in listing:
+                        gain_valk += listing["keys"]
+        for item in offer.items_to_give:
+            name = item.market_name
+            if name in currencies:
+                names_losing.append(name)
+                gain_val += currencies[name]
+            else:
+                name = GlobalFuncs.name_item(item)
+                names_losing.append(name)
+                response = GlobalFuncs.search(name, info.settings["sid"])
+                if response["sell"]["total"] > 0:
+                    if info.settings["accept_any_sell_order"]:
+                        listing = response["sell"]["listings"][0]["currencies"]
+                        if "metal" in listing:
+                            lose_val += listing["metal"]
+                        if "keys" in listing:
+                            lose_valk += listing["keys"]
+                    else:
+                        listings = response["sell"]["listings"]
+                        for listing in listings:
+                            if listing["item"]["id"] == item.assetid:
+                                if "metal" in listing["currencies"]:
+                                    lose_val += listing["currencies"]["metal"]
+                                if "keys" in listing["currencies"]:
+                                    lose_valk += listing["currencies"]["keys"]
+        if lose_val <= gain_val and lose_valk <= gain_valk:
+            accept = True
+            handled = True
+        elif info.settings["currency_exchange"] and (lose_valk > gain_valk or gain_valk > lose_valk):
+            key_s = keys
+            key_b = keys
+            if info.settings["use_my_key_price"]:
+                response = GlobalFuncs.search("Mann Co. Supply Crate Key", info.settings["sid"])
+                if response["sell"]["total"] > 0:
+                    key_s = response["sell"]["listings"][0]["currencies"]["metal"]
+                if response["buy"]["total"] > 0:
+                    key_b = response["buy"]["listings"][0]["currencies"]["metal"]
+            if lose_valk > gain_valk:
+                while lose_valk > 0:
+                    lose_valk -= 1
+                    lose_val += key_s
+                    if lose_val <= gain_val and lose_valk <= gain_valk:
+                        accept = True
+                        handled = True
+                        break
+            elif gain_valk > lose_valk:
+                while gain_valk > 0:
+                    gain_valk -= 1
+                    gain_val += key_b
+                    if lose_val <= gain_val and lose_valk <= gain_valk:
+                        accept = True
+                        handled = True
+    if handled:
+        receiving = {}
+        losing = {}
+        for name in names_receiving:
+            if name not in receiving:
+                receiving[name] = 1
+            else:
+                receiving[name] += 1
+        for name in names_losing:
+            if name not in losing:
+                losing[name] = 1
+            else:
+                losing[name] += 1
+        receivel = []
+        losel = []
+        for name, amount in receiving.items():
+            receivel.append(name + " x" + str(amount))
+        for name, amount in losing.items():
+            losel.append(name + " x" + str(amount))
+        text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
+        if accept:
+            if await offer.accept():
+                print("Offer Accepted: " + text)
+            else:
+                print("Failed to accept offer: " + text)
+        elif decline and info.settings["decline_offers"]:
+            await offer.decline()
+            print("Offer Declined: " + text)
+        else:
+            print("Offer was invalid, leaving:" + text)
 
+loop = asyncio.get_event_loop()
+loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
+while True:
+    try:
+        manager.run_forever()
+    except:
+        pass
 
 
 
