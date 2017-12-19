@@ -52,7 +52,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.11"
+version = "0.1.2"
 
 
 # Functions to be used anywhere
