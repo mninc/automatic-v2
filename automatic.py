@@ -1,7 +1,6 @@
 # Imports
 import time
 import webbrowser
-import requests
 import json
 import threading
 import pip
@@ -28,6 +27,7 @@ for package in nondefault_packages:
         input("Please restart the program to continue.\n")
         exit()
 
+import requests
 from pytrade import login, client
 from Crypto.Cipher import DES
 
