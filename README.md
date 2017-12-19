@@ -11,7 +11,6 @@ Run the program in a command-line interface.
 The program will guide you through all the steps you need. It will also update itself (after asking you) when the time comes.
 One important thing to note is that elevated access to the backpack.tf apis is necessary to use this program.
 
-Please note that at this time interfacing through the command line will only work on Windows.
 You can use the `help` command to see all the commands you can use.
 
 This program is extremely new, and there are likely bugs littered throughout it. If I were you, I wouldn't use this with higher-value items yet.

@@ -7,13 +7,23 @@ import pip
 import importlib
 import asyncio
 from random import randint
+commands = None
 try:
     import msvcrt
-    commands = True
+    commands = "msv"
 except ImportError:
-    commands = False
-    print("Platform is not Windows, toggling will not work. This will be fixed in a future release.")
     msvcrt = None
+    commands = "get"
+    import sys, tty, termios
+
+    def getch():
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            return sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 
 nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "Crypto"}
@@ -32,7 +42,7 @@ from pytrade import login, client
 from Crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.4"
+version = "0.1.5"
 
 
 # Functions to be used anywhere
@@ -245,6 +255,19 @@ def listener():
             chars.append(letter)
 
 
+def listener_unix():
+    chars = []
+    while True:
+        letter = getch()
+        if letter == "\r":
+            word = "".join(chars)
+            print("\n")
+            GlobalFuncs.process_command(word)
+            chars = []
+        else:
+            chars.append(letter)
+
+
 # Checks if this is the most recent version
 if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt").text.strip() != version:
     print("You are not running the current version of the program.")
@@ -425,8 +448,11 @@ currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
 response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
 keys = response["response"]["currencies"]["keys"]["price"]["value"]
 
-if commands:
+if commands == "msv":
     commandListener = threading.Thread(target=listener)
+    commandListener.start()
+elif commands == "get":
+    commandListener = threading.Thread(target=listener_unix)
     commandListener.start()
 
 steam_client = login.AsyncClient(info.settings["username"], info.settings["password"])
@@ -445,9 +471,20 @@ async def poll_end():
         # If it has been 100 seconds since sending the last heartbeat
         info.heartbeat()
 
+
 @manager.on("error")
 async def error(message):
     print("An error occured: " + str(message))
+
+
+@manager.on("trade_accepted")
+async def accepted_offer(trade):
+    print("Trade " + trade.tradeofferid + " was accepted")
+
+
+@manager.on("trade_declined")
+async def accepted_offer(trade):
+    print("Trade " + trade.tradeofferid + " was declined")
 
 
 @manager.on("new_trade")
