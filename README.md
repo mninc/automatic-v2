@@ -3,7 +3,7 @@ The unofficial version 2 of backpack.tf automatic
 
 ## How to use
 
-You'll need to [download python3.6+](http://www.python.org) to use this.
+You'll need to [download python3.6+](https://www.python.org/downloads/) to use this.
 
 Then, download `automatic.py` by going [here](https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py), right clicking and saving as a .py file in the directory you want it in.
 Run the program in a command-line interface.
