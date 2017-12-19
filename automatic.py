@@ -52,7 +52,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.10"
+version = "0.1.11"
 
 
 # Functions to be used anywhere
@@ -466,7 +466,7 @@ else:
     exit()
 
 
-steam_client = login.AsyncClient(info.settings["username"], info.settings["password"])
+steam_client = login.AsyncClient(info.settings["username"], info.settings["password"], one_time_code=input("Please enter your steam guard one time code.\n"))
 manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
                               identity_secret=info.settings["identity_secret"], poll_delay=10)
 
