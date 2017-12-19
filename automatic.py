@@ -32,7 +32,7 @@ from pytrade import login, client
 from Crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.3"
+version = "0.1.4"
 
 
 # Functions to be used anywhere
@@ -444,6 +444,10 @@ async def poll_end():
     if time.time() - info.lasthb > 100:
         # If it has been 100 seconds since sending the last heartbeat
         info.heartbeat()
+
+@manager.on("error")
+async def error(message):
+    print("An error occured: " + str(message))
 
 
 @manager.on("new_trade")
