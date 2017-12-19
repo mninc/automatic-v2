@@ -52,7 +52,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.7"
+version = "0.1.8"
 
 
 # Functions to be used anywhere
@@ -385,7 +385,7 @@ class Settings:
                                                                     "identity secret")
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
-                                                        "steam id")
+                                                        "steam id64")
                 self.settings["acceptgifts"] = False
                 self.settings["owners"] = []
                 self.settings["accept_any_sell_order"] = False
@@ -456,7 +456,16 @@ info = Settings()
 
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
 response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
-keys = response["response"]["currencies"]["keys"]["price"]["value"]
+if "currencies" in response:
+    keys = response["response"]["currencies"]["keys"]["price"]["value"]
+else:
+    print("Error loading currencies: " + str(response["response"]))
+    change = input("Enter 'token' or 'apikey' to change one of them.\n")
+    if change == "token":
+        info.update("token", input("Please enter your backpack.tf user token.\n"))
+    elif change == "apikey":
+        info.update("apikey", input("Please enter your backpack.tf api key.\n"))
+    exit()
 
 if commands == "msv":
     commandListener = threading.Thread(target=listener)
