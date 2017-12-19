@@ -32,7 +32,7 @@ from pytrade import login, client
 from Crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.2"
+version = "0.1.3"
 
 
 # Functions to be used anywhere
@@ -246,7 +246,7 @@ def listener():
 
 
 # Checks if this is the most recent version
-if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__").text[:-1] != version:
+if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt").text.strip() != version:
     print("You are not running the current version of the program.")
     print("You really should be. It's better. I promise.")
     if GlobalFuncs.check("Want me to download it for you?\ny/n\n"):
@@ -305,7 +305,12 @@ class Settings:
                         print("Key needs to be 8 characters.")
                 des = DES.new(self.key.encode(), DES.MODE_ECB)
                 x = des.decrypt(f.read())
-                x = x.decode().strip()
+                try:
+                    x = x.decode().strip()
+                except UnicodeDecodeError:
+                    print("It appears you typed in your encryption key incorrectly.")
+                    input("Press enter to exit. You can run the program again to try again.")
+                    exit()
                 self.settings = json.loads(x)
         except FileNotFoundError:
             print("settings file not found!")
