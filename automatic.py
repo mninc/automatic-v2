@@ -32,7 +32,7 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "Crypto"}
+nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp"}
 
 for package in nondefault_packages:
     try:
@@ -45,10 +45,13 @@ for package in nondefault_packages:
 
 import requests
 from pytrade import login, client
-from Crypto.Cipher import DES
+try:
+    from Crypto.Cipher import DES
+except ImportError:
+    from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.6"
+version = "0.1.7"
 
 
 # Functions to be used anywhere
