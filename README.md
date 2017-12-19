@@ -13,7 +13,7 @@ One important thing to note is that elevated access to the backpack.tf apis is n
 
 You can use the `help` command to see all the commands you can use.
 
-This program is extremely new, and there are likely bugs littered throughout it. If I were you, I wouldn't use this with higher-value items yet.
+This program is extremely new, and there are likely bugs littered throughout it. If I were you, I wouldn't use this with higher-value items yet. Please note that OSX users may need to run `/Applications/Python\ 3.6/Install\ Certificates.command` first.
 
 I am not responsible for any items you lose as a result of using this program.
 
