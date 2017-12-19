@@ -32,7 +32,7 @@ from pytrade import login, client
 from Crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.1"
+version = "0.1.2"
 
 
 # Functions to be used anywhere
@@ -68,14 +68,15 @@ class GlobalFuncs:
         name = item.market_name
         craftable = True
         effect = ""
+        unusual = False
+        if name.startswith("Unusual "):
+            unusual = True
         if item.descriptions != list():
             for line in item.descriptions:
                 if line["value"] == "( Not Usable in Crafting )":
                     craftable = False
-        if name[:8] == "Unusual ":
-            name = name[8:]
-            for line in item.descriptions:
-                if line["value"].startswith("★ Unusual Effect: "):
+                elif line["value"].startswith("★ Unusual Effect: ") and unusual:
+                    name = name[8:]
                     effect = line["value"][18:]
         if not craftable and effect:
             name = "Non-Craftable " + effect + " " + name
@@ -118,6 +119,12 @@ class GlobalFuncs:
             australium = 1
             name = name[11:]
 
+        effect = False
+        for _effect in effects:
+            if name.startswith(_effect):
+                effect = effects[_effect]
+                name = name[len(_effect) + 1:]
+
         data = {"key": info.settings["apikey"],
                 "steamid": user,
                 "item_names": True,
@@ -128,6 +135,10 @@ class GlobalFuncs:
                 "craftable": str(craftable),
                 "item": name,
                 "fold": 0}
+
+        if effect:
+            data["particle"] = effect
+
         while True:
             response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
             if "response" in response:
