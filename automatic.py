@@ -52,7 +52,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.8"
+version = "0.1.9"
 
 
 # Functions to be used anywhere
@@ -360,9 +360,7 @@ class Settings:
                                                            "You will need elevated access to use "
                                                            "this bot - request this and wait for "
                                                            "it to be approved before continuing "
-                                                           "to use this bot. If it's taking a "
-                                                           "while to be processed go ping Teeny "
-                                                           "in the backpack.tf discord :^)",
+                                                           "I̶̶̶f̶̶̶ ̶̶̶i̶̶̶t̶̶̶'̶̶̶s̶̶̶ ̶̶̶t̶̶̶a̶̶̶k̶̶̶i̶̶̶n̶̶̶g̶̶̶ ̶̶̶a̶̶̶ ̶̶̶w̶̶̶h̶̶̶i̶̶̶l̶̶̶e̶̶̶ ̶̶̶t̶̶̶o̶̶̶ ̶̶̶b̶̶̶e̶̶̶ ̶̶̶p̶̶̶r̶̶̶o̶̶̶c̶̶̶e̶̶̶s̶̶̶s̶̶̶e̶̶̶d̶̶̶ ̶̶̶g̶̶̶o̶̶̶ ̶̶̶p̶̶̶i̶̶̶n̶̶̶g̶̶̶ ̶̶̶T̶̶̶e̶̶̶e̶̶̶n̶̶̶y̶̶̶ ̶̶̶i̶̶̶n̶̶̶ ̶̶̶t̶̶̶h̶̶̶e̶̶̶ ̶̶̶b̶̶̶a̶̶̶c̶̶̶k̶̶̶p̶̶̶a̶̶̶c̶̶̶k̶̶̶.̶̶̶t̶̶̶f̶̶̶ ̶̶̶d̶̶̶i̶̶̶s̶̶̶c̶̶̶o̶̶̶r̶̶̶d̶̶̶ ̶̶̶:̶̶̶^̶̶̶)̶̶̶)̶",
                                                            "backpack.tf api key")
                 self.settings["sapikey"] = GlobalFuncs.show("https://steamcommunity.com/dev/apikey",
                                                             "If you already have an apikey, copy it. "
@@ -456,7 +454,7 @@ info = Settings()
 
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
 response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
-if "currencies" in response:
+if "currencies" not in response:
     keys = response["response"]["currencies"]["keys"]["price"]["value"]
 else:
     print("Error loading currencies: " + str(response["response"]))
