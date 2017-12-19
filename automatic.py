@@ -32,7 +32,8 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "RSA": "rsa"}
+nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "RSA": "rsa",
+                       "steamid": "steamid", "bs4": "bs4"}
 
 for package in nondefault_packages:
     try:
