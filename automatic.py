@@ -32,7 +32,7 @@ from pytrade import login, client
 from Crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.0"
+version = "0.1.1"
 
 
 # Functions to be used anywhere
@@ -154,13 +154,13 @@ class GlobalFuncs:
             # Toggle a boolean in the settings array
             command = command[7:]
             if command.startswith("acceptgifts"):
-                info.update("acceptgifts", not info.settings["acceptgifts"])
+                info.update("acceptgifts", not info.settings["acceptgifts"], toggle=True)
             elif command.startswith("accept_any_sell_order"):
-                info.update("accept_any_sell_order", not info.settings["accept_any_sell_order"])
+                info.update("accept_any_sell_order", not info.settings["accept_any_sell_order"], toggle=True)
             elif command.startswith("currency_exchange"):
-                info.update("currency_exchange", not info.settings["currency_exchange"])
+                info.update("currency_exchange", not info.settings["currency_exchange"], toggle=True)
             elif command.startswith("use_my_key_price"):
-                info.update("use_my_key_price", not info.settings["use_my_key_price"])
+                info.update("use_my_key_price", not info.settings["use_my_key_price"], toggle=True)
         elif command.startswith("add"):
             # Add a variable to a list
             command = command[4:]
@@ -222,7 +222,9 @@ print(display)
 def listener():
     chars = []
     while True:
-        letter = msvcrt.getwche()
+        while not msvcrt.kbhit():
+            pass
+        letter = msvcrt.getche().decode("utf-8")
         if letter == "\r":
             word = "".join(chars)
             print("\n")
@@ -364,9 +366,9 @@ class Settings:
             input("Settings not present. Exiting program...")
             exit()
 
-    def update(self, var, newval):
+    def update(self, var, newval, toggle=False):
         if var in self.settings:
-            if var not in self.bools:
+            if var not in self.bools or toggle:
                 self.settings[var] = newval
                 if not self.key:
                     with open("settings.json", "w") as f:
@@ -494,7 +496,7 @@ async def new_offer(offer):
                     else:
                         listings = response["sell"]["listings"]
                         for listing in listings:
-                            if listing["item"]["id"] == item.assetid:
+                            if listing["item"]["id"] == item.id:
                                 if "metal" in listing["currencies"]:
                                     lose_val += listing["currencies"]["metal"]
                                 if "keys" in listing["currencies"]:
