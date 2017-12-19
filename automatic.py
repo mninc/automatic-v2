@@ -9,12 +9,18 @@ import asyncio
 from random import randint
 commands = None
 try:
+    # Try and use msvcrt if possible - Windows only
     import msvcrt
     commands = "msv"
 except ImportError:
+    # msvcrt is not available
     msvcrt = None
     commands = "get"
-    import sys, tty, termios
+
+    # an alternative for msvcrt - Unix only
+    import sys
+    import tty
+    import termios
 
     def getch():
         fd = sys.stdin.fileno()
@@ -25,7 +31,7 @@ except ImportError:
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
-
+# Packages not included in python by default
 nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "Crypto"}
 
 for package in nondefault_packages:
@@ -42,7 +48,7 @@ from pytrade import login, client
 from Crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.5"
+version = "0.1.6"
 
 
 # Functions to be used anywhere
@@ -152,7 +158,7 @@ class GlobalFuncs:
         while True:
             response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
             if "response" in response:
-                time.sleep(randint(5,10))
+                time.sleep(randint(5, 10))
             else:
                 break
 
@@ -457,7 +463,7 @@ elif commands == "get":
 
 steam_client = login.AsyncClient(info.settings["username"], info.settings["password"])
 manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
-                                      identity_secret=info.settings["identity_secret"], poll_delay=10)
+                              identity_secret=info.settings["identity_secret"], poll_delay=10)
 
 
 @manager.on("logged_on")
@@ -534,6 +540,8 @@ async def new_offer(offer):
                         gain_val += listing["metal"]
                     if "keys" in listing:
                         gain_valk += listing["keys"]
+                else:
+                    decline = True
         for item in offer.items_to_give:
             name = item.market_name
             if name in currencies:
@@ -552,13 +560,23 @@ async def new_offer(offer):
                             lose_valk += listing["keys"]
                     else:
                         listings = response["sell"]["listings"]
+                        found = False
                         for listing in listings:
                             if listing["item"]["id"] == item.id:
+                                found = True
                                 if "metal" in listing["currencies"]:
                                     lose_val += listing["currencies"]["metal"]
                                 if "keys" in listing["currencies"]:
                                     lose_valk += listing["currencies"]["keys"]
-        if lose_val <= gain_val and lose_valk <= gain_valk:
+                        if not found:
+                            decline = True
+                            handled = True
+                else:
+                    handled = True
+                    decline = True
+        if handled:
+            pass
+        elif lose_val <= gain_val and lose_valk <= gain_valk:
             accept = True
             handled = True
         elif info.settings["currency_exchange"] and (lose_valk > gain_valk or gain_valk > lose_valk):
