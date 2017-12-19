@@ -52,7 +52,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.9"
+version = "0.1.10"
 
 
 # Functions to be used anywhere
@@ -465,17 +465,17 @@ else:
         info.update("apikey", input("Please enter your backpack.tf api key.\n"))
     exit()
 
+
+steam_client = login.AsyncClient(info.settings["username"], info.settings["password"])
+manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
+                              identity_secret=info.settings["identity_secret"], poll_delay=10)
+
 if commands == "msv":
     commandListener = threading.Thread(target=listener)
     commandListener.start()
 elif commands == "get":
     commandListener = threading.Thread(target=listener_unix)
     commandListener.start()
-
-steam_client = login.AsyncClient(info.settings["username"], info.settings["password"])
-manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
-                              identity_secret=info.settings["identity_secret"], poll_delay=10)
-
 
 @manager.on("logged_on")
 async def logon():
