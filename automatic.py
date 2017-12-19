@@ -607,15 +607,21 @@ async def new_offer(offer):
         text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
         if accept:
             if await offer.accept():
-                print("Offer Accepted: " + text)
             else:
                 print("Failed to accept offer: " + text)
         elif decline and info.settings["decline_offers"]:
             await offer.decline()
-            print("Offer Declined: " + text)
         else:
             print("Offer was invalid, leaving:" + text)
 
+@manager.on("trade_accepted")
+async def accepted_offer(trade):
+    print("Trade " + trade.tradeofferid + " was accepted")
+    
+@manager.on("trade_declined")
+async def accepted_offer(trade):
+    print("Trade " + trade.tradeofferid + " was declined")
+            
 loop = asyncio.get_event_loop()
 loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
 while True:
