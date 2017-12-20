@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.2.1"
+version = "0.2.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -401,9 +401,6 @@ class Settings:
                                                                     "you don't enter this, trades will not be confirmed"
                                                                     " automatically.",
                                                                     "identity secret")
-                if type(_identity_secret) == bytes:
-                    _identity_secret = _identity_secret.decode("utf-8")
-                 =
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
                                                         "steam id64")
