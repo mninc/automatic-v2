@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.2.3"
+version = "0.2.4"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -502,6 +502,9 @@ except:
     except:
         identity_secret = str(info.settings["identity_secret"])
         print(3)
+
+if len(identity_secret) == 27:
+    identity_secret += "="
 
 steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
                                  one_time_code=input("Please enter your steam guard one time code.\n"))
