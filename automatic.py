@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.2.0"
+version = "0.2.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -401,6 +401,9 @@ class Settings:
                                                                     "you don't enter this, trades will not be confirmed"
                                                                     " automatically.",
                                                                     "identity secret")
+                if type(_identity_secret) == bytes:
+                    _identity_secret = _identity_secret.decode("utf-8")
+                 =
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
                                                         "steam id64")
@@ -492,6 +495,16 @@ else:  # Api request failed - most likely because the api key is wrong
         info.update("apikey", input("Please enter your backpack.tf api key.\n"))
     exit()
 
+try:
+    identity_secret = info.settings["identity_secret"].encode().decode("utf-8")
+    print(1)
+except:
+    try:
+        identity_secret = info.settings["identity_secret"].decode("utf-8")
+        print(2)
+    except:
+        identity_secret = str(info.settings["identity_secret"])
+        print(3)
 
 steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
                                  one_time_code=input("Please enter your steam guard one time code.\n"))
