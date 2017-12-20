@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.3.0"
+version = "0.3.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -503,13 +503,13 @@ except:
         identity_secret = str(info.settings["identity_secret"])
         print(3)
 
-if len(identity_secret) == 27:
+while len(identity_secret) % 4 != 0:
     identity_secret += "="
 
 steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
                                  one_time_code=input("Please enter your steam guard one time code.\n"))
 manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
-                              identity_secret=info.settings["identity_secret"], poll_delay=10)
+                              identity_secret=identity_secret, poll_delay=10)
 
 if commands == "msv":
     commandListener = threading.Thread(target=listener)
