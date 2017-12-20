@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.3.3"
+version = "0.3.4"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -273,7 +273,8 @@ def listener():
             pass
         letter = msvcrt.getche().decode("utf-8")
         if letter == "\x08":
-            del chars[len(chars)-1]
+            if len(chars) != 0:
+                del chars[len(chars)-1]
         elif letter == "\r":
             word = "".join(chars)
             print("\n")
@@ -291,7 +292,8 @@ def listener_unix():
         back = False
         if letter == "\x7f":
             back = True
-            del chars[len(chars)-1]
+            if len(chars) != 0:
+                del chars[len(chars)-1]
         if letter == "\r":
             word = "".join(chars)
             print("\n")
