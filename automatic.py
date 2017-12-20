@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.3.1"
+version = "0.3.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -280,6 +280,7 @@ def listener():
         else:
             chars.append(letter)
 
+
 # Listener for non-windows systems
 def listener_unix():
     chars = []
@@ -292,6 +293,7 @@ def listener_unix():
             chars = []
         else:
             chars.append(letter)
+            print("".join(chars))
 
 
 # Checks if this is the most recent version
@@ -410,6 +412,7 @@ class Settings:
                 self.settings["accept_any_sell_order"] = False
                 self.settings["currency_exchange"] = False
                 self.settings["use_my_key_price"] = False
+                self.settings["decline_offers"] = False
 
                 # Try to get an encryption key
                 while True:
@@ -434,6 +437,10 @@ class Settings:
         if not self.settings:
             input("Settings not present. Exiting program...")
             exit()
+
+        for option in self.bools:
+            if option not in self.settings:
+                self.update(option, False, toggle=True)
 
     def update(self, var, newval, toggle=False):
         if var in self.settings:  # Check setting exists to be changed
