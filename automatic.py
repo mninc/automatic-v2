@@ -18,18 +18,18 @@ except ImportError:
     commands = "get"
 
     # an alternative for msvcrt - Unix only
-    import sys
-    import tty
-    import termios
+import sys
+import tty
+import termios
 
-    def getch():
-        fd = sys.stdin.fileno()
-        old = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            return sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+def getch():
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        return sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
 nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
@@ -57,7 +57,7 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.3.2"
+version = "0.3.3"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -272,7 +272,9 @@ def listener():
         while not msvcrt.kbhit():
             pass
         letter = msvcrt.getche().decode("utf-8")
-        if letter == "\r":
+        if letter == "\x08":
+            del chars[len(chars)-1]
+        elif letter == "\r":
             word = "".join(chars)
             print("\n")
             GlobalFuncs.process_command(word)
@@ -286,13 +288,18 @@ def listener_unix():
     chars = []
     while True:
         letter = getch()
+        back = False
+        if letter == "\x7f":
+            back = True
+            del chars[len(chars)-1]
         if letter == "\r":
             word = "".join(chars)
             print("\n")
             GlobalFuncs.process_command(word)
             chars = []
         else:
-            chars.append(letter)
+            if not back:
+                chars.append(letter)
             print("".join(chars))
 
 
