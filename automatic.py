@@ -35,14 +35,19 @@ except ImportError:
 nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
                        "steamid": "steamid", "bs4": "bs4"}
 
+installed_package = False
 for package in nondefault_packages:
     try:
         importlib.import_module(package)
     except (ModuleNotFoundError, ImportError):
         print("Package '" + package + "' not found, will attempt to install now.")
         pip.main(["install", nondefault_packages[package]])
-        input("Please restart the program to continue.\n")
-        exit()
+        installed_package = True
+        print("Package installed.")
+
+if installed_package:
+    input("Please restart the program now.")
+    exit()
 
 import requests
 from pytrade import login, client
@@ -52,7 +57,8 @@ except ImportError:
     from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.1.2"
+version = "0.2.0"
+print("unofficial backpack.tf automatic v2 version " + version)
 
 
 # Functions to be used anywhere
@@ -86,7 +92,9 @@ class GlobalFuncs:
     @staticmethod
     def name_item(item):
         name = item.market_name
+        # Assume it's craftable
         craftable = True
+        # Assume it's not unusual with no effecr
         effect = ""
         unusual = False
         if name.startswith("Unusual "):
@@ -98,6 +106,8 @@ class GlobalFuncs:
                 elif line["value"].startswith("★ Unusual Effect: ") and unusual:
                     name = name[8:]
                     effect = line["value"][18:]
+
+        # Combine craftability and effect where applicable
         if not craftable and effect:
             name = "Non-Craftable " + effect + " " + name
         elif not craftable:
@@ -109,6 +119,7 @@ class GlobalFuncs:
     # Returns a classifieds search for the item specified
     @staticmethod
     def search(name, user):
+        # Take off any unneccesary prefixes
         if name[:4] == "The ":
             name = name[4:]
         if name[:14] == "Non-Craftable ":
@@ -139,6 +150,7 @@ class GlobalFuncs:
             australium = 1
             name = name[11:]
 
+        # Assume it's not unusual
         effect = False
         for _effect in effects:
             if name.startswith(_effect):
@@ -161,13 +173,17 @@ class GlobalFuncs:
 
         while True:
             response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
+            # Rate limited
             if "response" in response:
-                time.sleep(randint(5, 10))
+                # Try and get a request to go through - possible synchronisation in the future to speed this process
+                # up?
+                time.sleep(randint(0, 10))
             else:
                 break
 
         return response
 
+    # Process an input from a message - allows for future expansion with different input methods
     @staticmethod
     def process_command(command):
         if command.startswith("change"):
@@ -264,7 +280,7 @@ def listener():
         else:
             chars.append(letter)
 
-
+# Listener for non-windows systems
 def listener_unix():
     chars = []
     while True:
@@ -320,35 +336,41 @@ killstreaks = {"None": 0,
 
 class Settings:
     def __init__(self):
+        # The UNIX timestamp the last heartbeat was sent - setting this to 0 means a heartbeat is sent straight away
         self.lasthb = 0
+        # Settings array
         self.settings = {}
+        # Key for decrypting the settings file
         self.key = None
+        # Variables in the settings that need to be True or False
         self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price"]
         try:
+            # Open an unencrypted file
             with open("settings.json", "r") as f:
                 self.settings = json.load(f)
-        except (json.decoder.JSONDecodeError, UnicodeDecodeError):
+        except (json.decoder.JSONDecodeError, UnicodeDecodeError):  # File is encrypted
             with open("settings.json", "rb") as f:
                 print("File is encrypted.")
+                # Get the key
                 while True:
                     self.key = input("Please enter the 8 characters to decrypt your data.\n")
                     if len(self.key) == 8:
                         break
                     else:
                         print("Key needs to be 8 characters.")
+                # Decrypt the file
                 des = DES.new(self.key.encode(), DES.MODE_ECB)
                 x = des.decrypt(f.read())
                 try:
                     x = x.decode().strip()
-                except UnicodeDecodeError:
-                    print("It appears you typed in your encryption key incorrectly.")
+                except UnicodeDecodeError:  # File still could not be read
+                    print("It appears you typed in your encryption key incorrectly or your settings file is corrupted.")
                     input("Press enter to exit. You can run the program again to try again.")
                     exit()
                 self.settings = json.loads(x)
-        except FileNotFoundError:
+        except FileNotFoundError:  # File does not exist
             print("settings file not found!")
             if GlobalFuncs.check("want to make it?\ny/n\n"):
-                self.settings = dict()
                 self.settings["username"] = input("Please enter the username to log into the account.\n")
                 self.settings["password"] = input("Please enter the password.\n")
                 self.settings["apikey"] = GlobalFuncs.show("https://backpack.tf/developer/apikey/view",
@@ -359,8 +381,7 @@ class Settings:
                                                            "this is for a trading bot. "
                                                            "You will need elevated access to use "
                                                            "this bot - request this and wait for "
-                                                           "it to be approved before continuing "
-                                                           "I̶̶̶f̶̶̶ ̶̶̶i̶̶̶t̶̶̶'̶̶̶s̶̶̶ ̶̶̶t̶̶̶a̶̶̶k̶̶̶i̶̶̶n̶̶̶g̶̶̶ ̶̶̶a̶̶̶ ̶̶̶w̶̶̶h̶̶̶i̶̶̶l̶̶̶e̶̶̶ ̶̶̶t̶̶̶o̶̶̶ ̶̶̶b̶̶̶e̶̶̶ ̶̶̶p̶̶̶r̶̶̶o̶̶̶c̶̶̶e̶̶̶s̶̶̶s̶̶̶e̶̶̶d̶̶̶ ̶̶̶g̶̶̶o̶̶̶ ̶̶̶p̶̶̶i̶̶̶n̶̶̶g̶̶̶ ̶̶̶T̶̶̶e̶̶̶e̶̶̶n̶̶̶y̶̶̶ ̶̶̶i̶̶̶n̶̶̶ ̶̶̶t̶̶̶h̶̶̶e̶̶̶ ̶̶̶b̶̶̶a̶̶̶c̶̶̶k̶̶̶p̶̶̶a̶̶̶c̶̶̶k̶̶̶.̶̶̶t̶̶̶f̶̶̶ ̶̶̶d̶̶̶i̶̶̶s̶̶̶c̶̶̶o̶̶̶r̶̶̶d̶̶̶ ̶̶̶:̶̶̶^̶̶̶)̶̶̶)̶",
+                                                           "it to be approved before continuing. ",
                                                            "backpack.tf api key")
                 self.settings["sapikey"] = GlobalFuncs.show("https://steamcommunity.com/dev/apikey",
                                                             "If you already have an apikey, copy it. "
@@ -370,8 +391,7 @@ class Settings:
                                                             "it in.",
                                                             "steam api key")
                 self.settings["token"] = GlobalFuncs.show("https://backpack.tf/connections",
-                                                          "Scroll down and click 'Show Token'. Copy this "
-                                                          "in.",
+                                                          "Scroll down and click 'Show Token'. Copy this in.",
                                                           "backpack.tf user token")
                 self.settings["identity_secret"] = GlobalFuncs.show("identity_secret url",
                                                                     "This is difficult - you can follow the "
@@ -384,12 +404,14 @@ class Settings:
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
                                                         "steam id64")
+                # Settings that are not set at the initialisation of the settings file
                 self.settings["acceptgifts"] = False
                 self.settings["owners"] = []
                 self.settings["accept_any_sell_order"] = False
                 self.settings["currency_exchange"] = False
                 self.settings["use_my_key_price"] = False
 
+                # Try to get an encryption key
                 while True:
                     self.key = input(
                         "Please enter 8 characters to encrypt your data. You will have to enter this key every time "
@@ -398,10 +420,10 @@ class Settings:
                         break
                     else:
                         print("Key needs to be 8 characters.")
-                if len(self.key) == 0:
+                if len(self.key) == 0:  # File fill not be encrypted
                     with open("settings.json", "w") as f:
                         json.dump(self.settings, f)
-                else:
+                else:  # File will be encrypted
                     with open("settings.json", "wb") as f:
                         _settings = json.dumps(self.settings)
                         while len(_settings) % 8 != 0:
@@ -414,27 +436,26 @@ class Settings:
             exit()
 
     def update(self, var, newval, toggle=False):
-        if var in self.settings:
+        if var in self.settings:  # Check setting exists to be changed
             if var not in self.bools or toggle:
+                # Checks we're not changing a boolean to something other than True or False
                 self.settings[var] = newval
-                if not self.key:
+                if not self.key:  # File is not encrypted
                     with open("settings.json", "w") as f:
                         json.dump(self.settings, f)
-                else:
+                else:  # File is encrypted
                     with open("settings.json", "wb") as f:
                         _settings = json.dumps(self.settings)
                         while len(_settings) % 8 != 0:
                             _settings += " "
                         des = DES.new(self.key.encode(), DES.MODE_ECB)
                         x = des.encrypt(_settings.encode())
-                        print(x)
                         f.write(x)
                 print("Successfully updated " + var + ".")
             else:
                 # Trying to change a boolean to a string
                 print("This option is toggleable and cannot be manually set. Please use 'toggle' " + var + " instead.")
         else:
-            # Trying to change an option not in the settings array
             print("That is not an option that can be changed.")
 
     def heartbeat(self):
@@ -450,14 +471,20 @@ class Settings:
         self.lasthb = time.time()
 
 
+# Initialise the settings
 info = Settings()
 
+# Value of metal
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
+
+# Load key price
 response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
 if "currencies" not in response:
-    keys = response["response"]["currencies"]["keys"]["price"]["value"]
-else:
+    keys = round(18 * response["response"]["currencies"]["keys"]["price"]["value"])
+else:  # Api request failed - most likely because the api key is wrong
     print("Error loading currencies: " + str(response["response"]))
+    print("If that message says something about the api key being wrong, check that you have got them the right way "
+          "round or pasted them correctly.")
     change = input("Enter 'token' or 'apikey' to change one of them.\n")
     if change == "token":
         info.update("token", input("Please enter your backpack.tf user token.\n"))
@@ -466,7 +493,8 @@ else:
     exit()
 
 
-steam_client = login.AsyncClient(info.settings["username"], info.settings["password"], one_time_code=input("Please enter your steam guard one time code.\n"))
+steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
+                                 one_time_code=input("Please enter your steam guard one time code.\n"))
 manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
                               identity_secret=info.settings["identity_secret"], poll_delay=10)
 
@@ -477,6 +505,7 @@ elif commands == "get":
     commandListener = threading.Thread(target=listener_unix)
     commandListener.start()
 
+
 @manager.on("logged_on")
 async def logon():
     print("Logged in.")
@@ -484,8 +513,7 @@ async def logon():
 
 @manager.on("end_poll")
 async def poll_end():
-    if time.time() - info.lasthb > 100:
-        # If it has been 100 seconds since sending the last heartbeat
+    if time.time() - info.lasthb > 100:  # If it has been 100 seconds since sending the last heartbeat
         info.heartbeat()
 
 
@@ -506,12 +534,16 @@ async def accepted_offer(trade):
 
 @manager.on("new_trade")
 async def new_offer(offer):
+    # We haven't made a decision yet
     decline = False
     accept = False
     handled = False
+    # The names of the items in the trade for display later
     names_receiving = []
     names_losing = []
+    # Get their steamid64
     their_id = offer.steamid_other.toString()
+    # See if they have any bans
     response = requests.get("https://backpack.tf/api/users/info/v1", json={"key": info.settings["apikey"],
                                                                            "steamids": their_id}).json()
     print("Received offer " + offer.tradeofferid + " from " + response["users"][their_id]["name"] + ".")
@@ -519,102 +551,123 @@ async def new_offer(offer):
         user = response["users"][their_id]["bans"]
     else:
         user = []
-    if their_id in info.settings["owners"]:
+    if their_id in info.settings["owners"]:  # Accept if the user is whitelisted
         print("Accepting Trade: Offer from owner")
         accept = True
         handled = True
-    elif "steamrep_scammer" in user or "all" in user:
+    elif "steamrep_scammer" in user or "all" in user:  # Decline if the user is banned or a a steamrep scammer
         print("Declining Trade: User is a banned on steamrep or backpack.tf")
         decline = True
         handled = True
     elif not offer.items_to_give and info.settings["acceptgifts"]:
+        # Accept if it is a gift offer and gift offers are enabled
         print("Accepting Trade: not losing any items.")
         accept = True
         handled = True
-    else:
+    else:  # Otherwise, check all of the items
+        # No items checked yet
         lose_val = 0
         lose_valk = 0
         gain_val = 0
         gain_valk = 0
+        # Check all the items we are receiving
         for item in offer.items_to_receive:
-            name = item.market_name
-            if name in currencies:
+            name = item.market_name  # Grab a name to start with that is ok
+            if name in currencies:  # If the item is metal
                 names_receiving.append(name)
                 gain_val += currencies[name]
-            else:
-                name = GlobalFuncs.name_item(item)
+            elif name == "Mann Co. Supply Crate Key":  # If the item is a key
+                gain_valk += 1
                 names_receiving.append(name)
-                response = GlobalFuncs.search(name, info.settings["sid"])
-                if response["buy"]["total"] > 0:
-                    listing = response["buy"]["listings"][0]["currencies"]
+            else:
+                name = GlobalFuncs.name_item(item)  # Get a usable name
+                names_receiving.append(name)
+                response = GlobalFuncs.search(name, info.settings["sid"])  # Classified search for that item
+                if response["buy"]["total"] > 0:  # If we have any listings
+                    listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
                     if "metal" in listing:
-                        gain_val += listing["metal"]
+                        gain_val += round(18 * listing["metal"])
                     if "keys" in listing:
                         gain_valk += listing["keys"]
-                else:
+                else:  # Decline - we're not buying this item
                     decline = True
+        # Check all the items we are losing
         for item in offer.items_to_give:
-            name = item.market_name
-            if name in currencies:
+            name = item.market_name  # Grab a name to start with that is ok
+            if name in currencies:  # If the item is metal
                 names_losing.append(name)
-                gain_val += currencies[name]
+                lose_val += currencies[name]
+            elif name == "Mann Co. Supply Crate Key":  # If the item is a key
+                lose_valk += 1
+                names_losing.append(name)
             else:
-                name = GlobalFuncs.name_item(item)
+                name = GlobalFuncs.name_item(item)  # Get a usable name
                 names_losing.append(name)
-                response = GlobalFuncs.search(name, info.settings["sid"])
-                if response["sell"]["total"] > 0:
+                response = GlobalFuncs.search(name, info.settings["sid"])  # Classified search for that item
+                if response["sell"]["total"] > 0:  # If we have any listings
                     if info.settings["accept_any_sell_order"]:
-                        listing = response["sell"]["listings"][0]["currencies"]
+                        # If we want to sell all items with that name not just specific items
+                        listing = response["sell"]["listings"][0]["currencies"]  # Grab the first item
                         if "metal" in listing:
-                            lose_val += listing["metal"]
+                            lose_val += round(18 * listing["metal"])
                         if "keys" in listing:
                             lose_valk += listing["keys"]
-                    else:
+                    else:  # We only want to sell the items with listings
                         listings = response["sell"]["listings"]
+                        # We have not found a listing for this item yet
                         found = False
                         for listing in listings:
-                            if listing["item"]["id"] == item.id:
+                            if listing["item"]["id"] == item.id:  # This listing is a match
                                 found = True
                                 if "metal" in listing["currencies"]:
-                                    lose_val += listing["currencies"]["metal"]
+                                    lose_val += round(18 * listing["currencies"]["metal"])
                                 if "keys" in listing["currencies"]:
                                     lose_valk += listing["currencies"]["keys"]
-                        if not found:
+                        if not found:  # We are not selling this item
                             decline = True
                             handled = True
-                else:
+                else:  # We don't have any listings for this
                     handled = True
                     decline = True
-        if handled:
+        if handled:  # We've already decided what to do
             pass
-        elif lose_val <= gain_val and lose_valk <= gain_valk:
+        elif lose_val <= gain_val and lose_valk <= gain_valk:  # The value is good
             accept = True
             handled = True
         elif info.settings["currency_exchange"] and (lose_valk > gain_valk or gain_valk > lose_valk):
+            # The value is not good, we'll try to move around some keys into ref and see if it matches (this option
+            #                                                                                           is enabled)
+
+            # We'll assume the offer is bad at this point
+            handled = True
+            decline = True
+
+            # Grab the suggested key price
             key_s = keys
             key_b = keys
-            if info.settings["use_my_key_price"]:
-                response = GlobalFuncs.search("Mann Co. Supply Crate Key", info.settings["sid"])
+            if info.settings["use_my_key_price"]:  # If we want to use our listing
+                response = GlobalFuncs.search("Mann Co. Supply Crate Key", info.settings["sid"])  # Search for our keys
                 if response["sell"]["total"] > 0:
-                    key_s = response["sell"]["listings"][0]["currencies"]["metal"]
+                    key_s = round(18 * response["sell"]["listings"][0]["currencies"]["metal"])
                 if response["buy"]["total"] > 0:
-                    key_b = response["buy"]["listings"][0]["currencies"]["metal"]
-            if lose_valk > gain_valk:
+                    key_b = round(18 * response["buy"]["listings"][0]["currencies"]["metal"])
+            if lose_valk > gain_valk:  # See if changing our keys into ref works
                 while lose_valk > 0:
                     lose_valk -= 1
                     lose_val += key_s
-                    if lose_val <= gain_val and lose_valk <= gain_valk:
+                    if lose_val <= gain_val and lose_valk <= gain_valk:  # It matches up
                         accept = True
                         handled = True
                         break
-            elif gain_valk > lose_valk:
+            elif gain_valk > lose_valk:  # See if changing their keys into ref works
                 while gain_valk > 0:
                     gain_valk -= 1
                     gain_val += key_b
-                    if lose_val <= gain_val and lose_valk <= gain_valk:
+                    if lose_val <= gain_val and lose_valk <= gain_valk:  # It matches up
                         accept = True
                         handled = True
-    if handled:
+    if handled:  # We've made a decision
+        # Count how many of each item
         receiving = {}
         losing = {}
         for name in names_receiving:
@@ -627,6 +680,7 @@ async def new_offer(offer):
                 losing[name] = 1
             else:
                 losing[name] += 1
+        # Build a string for displaying
         receivel = []
         losel = []
         for name, amount in receiving.items():
@@ -634,16 +688,19 @@ async def new_offer(offer):
         for name, amount in losing.items():
             losel.append(name + " x" + str(amount))
         text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
-        if accept:
-            if await offer.accept():
+        if accept:  # If we're accepting the offer
+            if await offer.accept():  # If the offer was accepted correctly
                 print("Offer Accepted: " + text)
-            else:
+            else:  # The offer failed to be accepted for whatever reason
                 print("Failed to accept offer: " + text)
-        elif decline and info.settings["decline_offers"]:
+        elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
             print("Offer Declined: " + text)
-        else:
+        else:  # If the offer should have been declined
             print("Offer was invalid, leaving:" + text)
+    else:  # This should never happen
+        print("For some reason the offer was not accepted.")
+        print("Please create an issue on github: https://github.com/mninc/automatic-v2/issues")
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))

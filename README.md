@@ -3,7 +3,7 @@ The unofficial version 2 of backpack.tf automatic
 
 ## How to use
 
-You'll need to [download python3.6+](https://www.python.org/downloads/) to use this.
+You'll need to [download python3.6+](https://www.python.org/downloads/) to use this. OSX users may need to run `/Applications/Python\ 3.6/Install\ Certificates.command` if an error occurs when running the program..
 
 Then, download `automatic.py` by going [here](https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py), right clicking and saving as a .py file in the directory you want it in.
 Run the program in a command-line interface.
@@ -13,9 +13,11 @@ One important thing to note is that elevated access to the backpack.tf apis is n
 
 You can use the `help` command to see all the commands you can use.
 
-This program is extremely new, and there are likely bugs littered throughout it. If I were you, I wouldn't use this with higher-value items yet. Please note that OSX users may need to run `/Applications/Python\ 3.6/Install\ Certificates.command` first.
+This program is extremely new, and there are likely bugs littered throughout it. If I were you, I wouldn't use this with higher-value items yet.
 
 I am not responsible for any items you lose as a result of using this program.
+
+This program is confirmed to work on Windows and Linux.
 
 Feel free to submit an issue or a pull request.
 
