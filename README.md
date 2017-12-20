@@ -23,4 +23,4 @@ Feel free to submit an issue or a pull request.
 
 Written entirely by me - hit me up on discord `manic#5170` or on my [steam profile](http://steamcommunity.com/id/manic_/)
 
-Thanks to [Steam](http://www.store.steampowered.com) and [backpack.tf](http://www.backpack.tf) for their services and to [this library](https://github.com/Zwork101/steam-trade) by zwork for the main trading interface. 
+Thanks to [Steam](http://store.steampowered.com) and [backpack.tf](http://www.backpack.tf) for their services and to [this library](https://github.com/Zwork101/steam-trade) by zwork for the main trading interface. 
