@@ -3,7 +3,7 @@ The unofficial version 2 of backpack.tf automatic
 
 ## How to use
 
-You'll need to [download python3.6+](https://www.python.org/downloads/) to use this. OSX users may need to run `/Applications/Python\ 3.6/Install\ Certificates.command` if an error occurs when running the program..
+You'll need to [download python3.6+](https://www.python.org/downloads/) to use this.
 
 Then, download `automatic.py` by going [here](https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py), right clicking and saving as a .py file in the directory you want it in.
 Run the program in a command-line interface.
@@ -24,3 +24,10 @@ Feel free to submit an issue or a pull request.
 Written entirely by me - hit me up on discord `manic#5170` or on my [steam profile](http://steamcommunity.com/id/manic_/)
 
 Thanks to [Steam](http://store.steampowered.com) and [backpack.tf](http://www.backpack.tf) for their services and to [this library](https://github.com/Zwork101/steam-trade) by zwork for the main trading interface. 
+
+
+## OSX notes
+After installing python you may need to run `/Applications/Python\ 3.6/Install\ Certificates.command` if an error occurs.
+
+## Windows notes
+You may need to install the [Visual C++ build tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) if an error occurs.
