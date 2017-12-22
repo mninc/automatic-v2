@@ -32,7 +32,7 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-"""nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
+nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
                        "steamid": "steamid", "bs4": "bs4"}
 
 installed_package = False
@@ -47,17 +47,17 @@ for package in nondefault_packages:
 
 if installed_package:
     input("Please restart the program now.")
-    exit()"""
+    exit()
 
 import requests
 from pytrade import login, client
-"""try:
+try:
     from Crypto.Cipher import DES
 except ImportError:
-    from crypto.Cipher import DES"""
+    from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.3.5"
+version = "0.3.6"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
