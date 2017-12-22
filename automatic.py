@@ -18,21 +18,21 @@ except ImportError:
     commands = "get"
 
     # an alternative for msvcrt - Unix only
-import sys
-import tty
-import termios
+    import sys
+    import tty
+    import termios
 
-def getch():
-    fd = sys.stdin.fileno()
-    old = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        return sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    def getch():
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            return sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
+"""nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
                        "steamid": "steamid", "bs4": "bs4"}
 
 installed_package = False
@@ -47,17 +47,17 @@ for package in nondefault_packages:
 
 if installed_package:
     input("Please restart the program now.")
-    exit()
+    exit()"""
 
 import requests
 from pytrade import login, client
-try:
+"""try:
     from Crypto.Cipher import DES
 except ImportError:
-    from crypto.Cipher import DES
+    from crypto.Cipher import DES"""
 
 # Version number. This is compared to the github version number later
-version = "0.3.4"
+version = "0.3.5"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -508,16 +508,7 @@ else:  # Api request failed - most likely because the api key is wrong
         info.update("apikey", input("Please enter your backpack.tf api key.\n"))
     exit()
 
-try:
-    identity_secret = info.settings["identity_secret"].encode().decode("utf-8")
-    print(1)
-except:
-    try:
-        identity_secret = info.settings["identity_secret"].decode("utf-8")
-        print(2)
-    except:
-        identity_secret = str(info.settings["identity_secret"])
-        print(3)
+identity_secret = info.settings["identity_secret"]
 
 while len(identity_secret) % 4 != 0:
     identity_secret += "="
