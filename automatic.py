@@ -53,7 +53,7 @@ import requests
 from pytrade import login, client
 
 # Version number. This is compared to the github version number later
-version = "0.3.10"
+version = "0.3.11"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -236,6 +236,7 @@ Commands:
                                   token - backpack.tf user token
                                   identity_secret
                                   sid - your steam id64
+                                  shared_secret 
     toggle - Switches the setting from true to false or vice versa
              To view the current value of the setting use the 'change' command
              Settings to change - acceptgifts - accept trades where you lose no items
@@ -549,10 +550,10 @@ class Settings:
 
         for option in self.defaults:
             if option not in self.settings:
-                self.update(option, self.defaults[option], toggle=True)
+                self.update(option, self.defaults[option], toggle=True, admin=True)
 
-    def update(self, var, newval, toggle=False):
-        if var in self.settings:  # Check setting exists to be changed
+    def update(self, var, newval, toggle=False, admin=False):
+        if var in self.settings or admin:  # Check setting exists to be changed
             if var not in self.bools or toggle:
                 # Checks we're not changing a boolean to something other than True or False
                 self.settings[var] = newval
