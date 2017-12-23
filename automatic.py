@@ -53,7 +53,7 @@ import requests
 from pytrade import login, client
 
 # Version number. This is compared to the github version number later
-version = "0.3.8"
+version = "0.3.9"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -455,6 +455,11 @@ class Settings:
         self.key = None
         # Variables in the settings that need to be True or False
         self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price"]
+        # Default value of variables (for when the bot updates adding new options)
+        self.defaults = {"username": "",
+                         "password": "",
+                         "apikey": "",
+                         "sapikey": ""}
         try:
             # Open an unencrypted file
             with open("settings.json", "r") as f:
@@ -555,17 +560,17 @@ class Settings:
             print("That is not an option that can be changed.")
 
     def heartbeat(self):
-        response = requests.post("https://backpack.tf/api/aux/heartbeat/v1", data={"token": self.settings["token"]})
-        heartbeat = response.json()
-        if not str(response.status_code).startswith("2"):
-            print("Heartbeat failed: " + heartbeat["message"])
-        elif "bumped" in heartbeat:
-            if int(heartbeat["bumped"]) != 0:
+        response = requests.post("https://backpack.tf/api/aux/heartbeat/v1", data={"token": self.settings["token"],
+                                                                                   "automatic": "all"}).json()
+        if "message" in response:
+            print("Heartbeat failed: " + response["message"])
+        elif "bumped" in response:
+            if int(response["bumped"]) != 0:
                 print("Sent a heartbeat to backpack.tf. Bumped " + str(response["bumped"]) + " listings.")
             else:
                 print("Sent a heartbeat to backpack.tf.")
         else:
-            print("Error sending heartbeat: " + heartbeat["message"])
+            print("Error sending heartbeat: " + response["message"])
         self.lasthb = time.time()
 
 
