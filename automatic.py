@@ -32,7 +32,8 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "aiohttp": "aiohttp", "rsa": "rsa", "steamid": "steamid", "bs4": "bs4"}
+nondefault_packages = {"pytrade": "steam-trade", "aiohttp": "aiohttp", "rsa": "rsa", "steamid": "steamid", "bs4": "bs4",
+                       "requests": "requests", "pyee": "pyee", "asyncio": "asyncio"}
 
 installed_package = False
 for package in nondefault_packages:
