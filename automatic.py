@@ -53,7 +53,7 @@ import requests
 from pytrade import login, client
 
 # Version number. This is compared to the github version number later
-version = "0.3.11"
+version = "0.3.12"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -192,7 +192,7 @@ class GlobalFuncs:
                 else:
                     print("Unexpected setting")
             else:
-                info.update(words[0], words[1][1:])
+                info.update(words[0], words[1])
         elif command.startswith("toggle"):
             # Toggle a boolean in the settings array
             command = command[7:]
