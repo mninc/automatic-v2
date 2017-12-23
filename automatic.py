@@ -53,7 +53,7 @@ import requests
 from pytrade import login, client
 
 # Version number. This is compared to the github version number later
-version = "0.3.9"
+version = "0.3.10"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -459,7 +459,17 @@ class Settings:
         self.defaults = {"username": "",
                          "password": "",
                          "apikey": "",
-                         "sapikey": ""}
+                         "sapikey": "",
+                         "token": "",
+                         "identity_secret": "",
+                         "shared_secret": None,
+                         "sid": "",
+                         "acceptgifts": False,
+                         "owners": [],
+                         "accept_any_sell_order": False,
+                         "currency_exchange": False,
+                         "use_my_key_price": False,
+                         "decline_offers": False}
         try:
             # Open an unencrypted file
             with open("settings.json", "r") as f:
@@ -513,6 +523,7 @@ class Settings:
                                                         "Enter the profile URL of the account and copy the 'steamID64'.",
                                                         "steam id64")
                 # Settings that are not set at the initialisation of the settings file
+                self.settings["shared_secret"] = None
                 self.settings["acceptgifts"] = False
                 self.settings["owners"] = []
                 self.settings["accept_any_sell_order"] = False
@@ -536,9 +547,9 @@ class Settings:
             input("Settings not present. Exiting program...")
             exit()
 
-        for option in self.bools:
+        for option in self.defaults:
             if option not in self.settings:
-                self.update(option, False, toggle=True)
+                self.update(option, self.defaults[option], toggle=True)
 
     def update(self, var, newval, toggle=False):
         if var in self.settings:  # Check setting exists to be changed
@@ -596,12 +607,18 @@ else:  # Api request failed - most likely because the api key is wrong
     exit()
 
 identity_secret = info.settings["identity_secret"]
-
 while len(identity_secret) % 4 != 0:
     identity_secret += "="
 
-steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
-                                 one_time_code=input("Please enter your steam guard one time code.\n"))
+if info.settings["shared_secret"]:  # If shared secret is set
+    shared_secret = info.settings["shared_secret"]
+    while len(shared_secret) % 4 != 0:
+        shared_secret += "="
+    steam_client = login.AsyncClient(info.settings["username"], info.settings["password"], shared_secret=shared_secret)
+else:  # Shared secret is not set, use a one time code
+    steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
+                                     one_time_code=input("Please enter your steam guard one time code.\n"))
+
 manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
                               identity_secret=identity_secret, poll_delay=10)
 
