@@ -53,9 +53,10 @@ import requests
 from pytrade import login, client
 
 # Version number. This is compared to the github version number later
-version = "0.3.12"
+version = "0.3.13"
 print("unofficial backpack.tf automatic v2 version " + version)
 
+install_updates = True
 
 # Functions to be used anywhere
 class GlobalFuncs:
@@ -407,7 +408,8 @@ def listener_unix():
 
 
 # Checks if this is the most recent version
-if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt").text.strip() != version:
+if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt").text.strip() != version\
+        and install_updates:
     print("You are not running the current version of the program.")
     print("You really should be. It's better. I promise.")
     if GlobalFuncs.check("Want me to download it for you?\ny/n\n"):
@@ -832,9 +834,6 @@ loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
 while True:
     try:
         manager.run_forever()
-    except:
-        pass
-
-
-
-
+    except Exception as e:
+        print("Received an error: " + str(e))
+        print("Continuing...")
