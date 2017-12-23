@@ -412,8 +412,8 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
     print("You really should be. It's better. I promise.")
     if GlobalFuncs.check("Want me to download it for you?\ny/n\n"):
         # Downloads the new version
-        new = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py").text
-        with open("automatic.py", "w") as f:
+        new = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py").content
+        with open("automatic.py", "wb") as f:
             f.write(new)
         print("Success!")
         input("You should restart the bot now.")
