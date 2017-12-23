@@ -60,6 +60,6 @@ with open(file, "r") as f:
 
 with open(file, "w") as f:
     f.write(_encrypt(input("Please enter your encryption key. You will have to enter this every time you want to "
-                           "use the progtam."), string))
+                           "use the program."), string))
 
 print("Finished.")
