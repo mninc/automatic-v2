@@ -32,8 +32,7 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "Crypto.Cipher.DES": "pycrypto", "aiohttp": "aiohttp", "rsa": "rsa",
-                       "steamid": "steamid", "bs4": "bs4"}
+nondefault_packages = {"pytrade": "steam-trade", "aiohttp": "aiohttp", "rsa": "rsa", "steamid": "steamid", "bs4": "bs4"}
 
 installed_package = False
 for package in nondefault_packages:
@@ -51,13 +50,9 @@ if installed_package:
 
 import requests
 from pytrade import login, client
-try:
-    from Crypto.Cipher import DES
-except ImportError:
-    from crypto.Cipher import DES
 
 # Version number. This is compared to the github version number later
-version = "0.3.6"
+version = "0.3.7"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 
@@ -259,6 +254,110 @@ Commands:
         else:
             print("I'm unsure what you mean.")
 
+    @staticmethod
+    def nextk(key2, num):
+        num += 1
+        if num >= len(key2):
+            num -= len(key2)
+        return num
+
+    @staticmethod
+    def encrypt(key, string):
+        while len(string) % 4 != 0:
+            string += " "
+        while len(key) % 4 != 0:
+            key += " "
+
+        quarter = len(string) // 4
+        first = string[0:quarter]
+        second = string[quarter:2 * quarter]
+        third = string[2 * quarter:3 * quarter]
+        fourth = string[3 * quarter:4 * quarter]
+
+        quarter = len(key) // 4
+        first_k = key[0:quarter]
+        second_k = key[quarter:2 * quarter]
+        third_k = key[2 * quarter:3 * quarter]
+        fourth_k = key[3 * quarter:4 * quarter]
+
+        encrypted = []
+
+        number = 0
+        for char in first:
+            ec = ord(char) * ord(first_k[number])
+            encrypted.append(str(ec))
+            number = GlobalFuncs.nextk(first_k, number)
+
+        number = 0
+        for char in second:
+            ec = ord(char) * ord(second_k[number])
+            encrypted.append(str(ec))
+            number = GlobalFuncs.nextk(second_k, number)
+
+        number = 0
+        for char in third:
+            ec = ord(char) * ord(third_k[number])
+            encrypted.append(str(ec))
+            number = GlobalFuncs.nextk(third_k, number)
+
+        number = 0
+        for char in fourth:
+            ec = ord(char) * ord(fourth_k[number])
+            encrypted.append(str(ec))
+            number = GlobalFuncs.nextk(fourth_k, number)
+
+        encrypted = ",".join(encrypted)
+        return encrypted
+
+    @staticmethod
+    def decrypt(key, encrypted):
+        while len(encrypted) % 4 != 0:
+            encrypted += " "
+        while len(key) % 4 != 0:
+            key += " "
+
+        string = encrypted.split(",")
+
+        quarter = len(string) // 4
+        first = string[0:quarter]
+        second = string[quarter:2 * quarter]
+        third = string[2 * quarter:3 * quarter]
+        fourth = string[3 * quarter:4 * quarter]
+
+        quarter = len(key) // 4
+        first_k = key[0:quarter]
+        second_k = key[quarter:2 * quarter]
+        third_k = key[2 * quarter:3 * quarter]
+        fourth_k = key[3 * quarter:4 * quarter]
+
+        unencrypted = ""
+
+        number = 0
+        for char in first:
+            uec = int(char) // ord(first_k[number])
+            unencrypted += chr(uec)
+            number = GlobalFuncs.nextk(first_k, number)
+
+        number = 0
+        for char in second:
+            uec = int(char) // ord(second_k[number])
+            unencrypted += chr(uec)
+            number = GlobalFuncs.nextk(second_k, number)
+
+        number = 0
+        for char in third:
+            uec = int(char) // ord(third_k[number])
+            unencrypted += chr(uec)
+            number = GlobalFuncs.nextk(third_k, number)
+
+        number = 0
+        for char in fourth:
+            uec = int(char) // ord(fourth_k[number])
+            unencrypted += chr(uec)
+            number = GlobalFuncs.nextk(fourth_k, number)
+
+        return unencrypted.strip()
+
 
 # Displays any text that needs displaying. For future use if needed
 display = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/print.txt").text
@@ -360,25 +459,17 @@ class Settings:
             with open("settings.json", "r") as f:
                 self.settings = json.load(f)
         except (json.decoder.JSONDecodeError, UnicodeDecodeError):  # File is encrypted
-            with open("settings.json", "rb") as f:
-                print("File is encrypted.")
-                # Get the key
-                while True:
-                    self.key = input("Please enter the 8 characters to decrypt your data.\n")
-                    if len(self.key) == 8:
-                        break
-                    else:
-                        print("Key needs to be 8 characters.")
-                # Decrypt the file
-                des = DES.new(self.key.encode(), DES.MODE_ECB)
-                x = des.decrypt(f.read())
+            with open("settings.json", "r") as f:
+                string = f.read()
                 try:
-                    x = x.decode().strip()
-                except UnicodeDecodeError:  # File still could not be read
-                    print("It appears you typed in your encryption key incorrectly or your settings file is corrupted.")
-                    input("Press enter to exit. You can run the program again to try again.")
-                    exit()
-                self.settings = json.loads(x)
+                    self.key = input("Please enter your encryption key.\n")
+                    self.settings = json.loads(GlobalFuncs.decrypt(self.key, string))
+                except json.decoder.JSONDecodeError:
+                    print("Could not decrypt settings file. Please check you entered your encryption key correctly. "
+                          "Note - the method of encryption recently changed. If you entered your details before "
+                          "23/12/2017 (12/23/2017) please visit read the readme here - "
+                          "https://github.com/mninc/automatic-v2/blob/master/README.md")
+
         except FileNotFoundError:  # File does not exist
             print("settings file not found!")
             if GlobalFuncs.check("want to make it?\ny/n\n"):
@@ -423,26 +514,18 @@ class Settings:
                 self.settings["use_my_key_price"] = False
                 self.settings["decline_offers"] = False
 
-                # Try to get an encryption key
-                while True:
-                    self.key = input(
-                        "Please enter 8 characters to encrypt your data. You will have to enter this key every time "
-                        "you start the bot. If you do not want to encrypt this data, leave this blank.\n")
-                    if len(self.key) == 8 or len(self.key) == 0:
-                        break
-                    else:
-                        print("Key needs to be 8 characters.")
-                if len(self.key) == 0:  # File fill not be encrypted
+                # Get an encryption key
+                self.key = input("Please enter an encryption key to encrypt your data. You will have to enter this "
+                                 "every time you start the bot. If you do not want to encrypt this data, "
+                                 "leave this blank.\n")
+
+                if not self.key:  # File fill not be encrypted
                     with open("settings.json", "w") as f:
                         json.dump(self.settings, f)
                 else:  # File will be encrypted
-                    with open("settings.json", "wb") as f:
+                    with open("settings.json", "w") as f:
                         _settings = json.dumps(self.settings)
-                        while len(_settings) % 8 != 0:
-                            _settings += " "
-                        des = DES.new(self.key.encode(), DES.MODE_ECB)
-                        x = des.encrypt(_settings.encode())
-                        f.write(x)
+                        f.write(GlobalFuncs.encrypt(self.key, _settings))
         if not self.settings:
             input("Settings not present. Exiting program...")
             exit()
@@ -460,13 +543,9 @@ class Settings:
                     with open("settings.json", "w") as f:
                         json.dump(self.settings, f)
                 else:  # File is encrypted
-                    with open("settings.json", "wb") as f:
+                    with open("settings.json", "w") as f:
                         _settings = json.dumps(self.settings)
-                        while len(_settings) % 8 != 0:
-                            _settings += " "
-                        des = DES.new(self.key.encode(), DES.MODE_ECB)
-                        x = des.encrypt(_settings.encode())
-                        f.write(x)
+                        f.write(GlobalFuncs.encrypt(self.key, _settings))
                 print("Successfully updated " + var + ".")
             else:
                 # Trying to change a boolean to a string

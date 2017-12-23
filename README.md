@@ -29,5 +29,6 @@ Thanks to [Steam](http://store.steampowered.com) and [backpack.tf](http://www.ba
 ## OSX notes
 After installing python you may need to run `/Applications/Python\ 3.6/Install\ Certificates.command` if an error occurs.
 
-## Windows notes
-You may need to install the [Visual C++ build tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) if an error occurs.
+## Note on encrypting and decrypting files from before 23/12/2017 (12/23/2017)
+On this date the method of encrypting and decrypting files was changed. Users with encrypted files from before this date should save [this](https://raw.githubusercontent.com/mninc/automatic-v2/master/decrypt.py) program into the same directory as `automatic.py` and run it.
+Users then wanting to encrypt their file with the new method should save [this](https://raw.githubusercontent.com/mninc/automatic-v2/master/encrypt.py) program into the same directory and run it.
