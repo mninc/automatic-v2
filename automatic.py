@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.4.0"
+version = "0.4.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -827,7 +827,7 @@ async def new_offer(offer):
                         # We have not found a listing for this item yet
                         found = False
                         for listing in listings:
-                            if listing["item"]["id"] == item.id:  # This listing is a match
+                            if int(listing["item"]["id"]) == int(item.id):  # This listing is a match
                                 found = True
                                 if "metal" in listing["currencies"]:
                                     lose_val += round(18 * listing["currencies"]["metal"])
