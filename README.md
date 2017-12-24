@@ -34,3 +34,8 @@ After installing python you may need to run `/Applications/Python\ 3.6/Install\ 
 ## Note on encrypting and decrypting files from before 23/12/2017 (12/23/2017)
 On this date the method of encrypting and decrypting files was changed. Users with encrypted files from before this date should save [this](https://raw.githubusercontent.com/mninc/automatic-v2/master/decrypt.py) program into the same directory as `automatic.py` and run it.
 Users then wanting to encrypt their file with the new method should save [this](https://raw.githubusercontent.com/mninc/automatic-v2/master/encrypt.py) program into the same directory and run it.
+
+## TODO list
+* Make generic unusual buy orders work 
+* Get confirmation there are no more bugs (there probably are)
+* Build package for distribution that doesn't require a python installation
