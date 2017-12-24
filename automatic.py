@@ -7,6 +7,7 @@ import pip
 import importlib
 import asyncio
 from random import randint
+import logging
 commands = None
 try:
     # Try and use msvcrt if possible - Windows only
@@ -52,11 +53,16 @@ if installed_package:
 import requests
 from pytrade import login, client
 
+# Set up logging
+logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
+logging.info("Program started")
+
 # Version number. This is compared to the github version number later
-version = "0.3.13"
+version = "0.4.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
+
 
 # Functions to be used anywhere
 class GlobalFuncs:
@@ -257,6 +263,9 @@ Commands:
         else:
             print("I'm unsure what you mean.")
 
+    # Encryption methods
+
+    # Iterate through the encryption key
     @staticmethod
     def nextk(key2, num):
         num += 1
@@ -264,6 +273,7 @@ Commands:
             num -= len(key2)
         return num
 
+    # Encrypt a string
     @staticmethod
     def encrypt(key, string):
         while len(string) % 4 != 0:
@@ -312,6 +322,7 @@ Commands:
         encrypted = ",".join(encrypted)
         return encrypted
 
+    # Decrypt a string
     @staticmethod
     def decrypt(key, encrypted):
         while len(encrypted) % 4 != 0:
@@ -430,6 +441,7 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
             input("Once you've done that you can restart the bot.")
             exit()
     input("You can press enter to continue running the bot with this version or close the program now.")
+logging.info("Checked for updates")
 
 # Load some prebuilt half-scrap items and effect name to number reference
 halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").text)
@@ -446,6 +458,7 @@ killstreaks = {"None": 0,
                "Killstreak": 1,
                "Specialized Killstreak": 2,
                "Professional Killstreak": 3}
+logging.info("Initialised variables")
 
 
 class Settings:
@@ -477,20 +490,26 @@ class Settings:
             # Open an unencrypted file
             with open("settings.json", "r") as f:
                 self.settings = json.load(f)
+                logging.info("Loaded unencrypted file")
         except (json.decoder.JSONDecodeError, UnicodeDecodeError):  # File is encrypted
             with open("settings.json", "r") as f:
                 string = f.read()
                 try:
                     self.key = input("Please enter your encryption key.\n")
                     self.settings = json.loads(GlobalFuncs.decrypt(self.key, string))
+                    logging.info("Loaded encrypted file")
                 except json.decoder.JSONDecodeError:
                     print("Could not decrypt settings file. Please check you entered your encryption key correctly. "
                           "Note - the method of encryption recently changed. If you entered your details before "
                           "23/12/2017 (12/23/2017) please visit read the readme here - "
                           "https://github.com/mninc/automatic-v2/blob/master/README.md")
+                    logging.warning("Could not open settings file")
+                    input("Please press enter to quit.")
+                    exit()
 
         except FileNotFoundError:  # File does not exist
-            print("settings file not found!")
+            print("Settings file not found!")
+            logging.info("Creating settings file")
             if GlobalFuncs.check("want to make it?\ny/n\n"):
                 self.settings["username"] = input("Please enter the username to log into the account.\n")
                 self.settings["password"] = input("Please enter the password.\n")
@@ -539,10 +558,13 @@ class Settings:
                                  "every time you start the bot. If you do not want to encrypt this data, "
                                  "leave this blank.\n")
 
+                logging.info("Created settings file")
                 if not self.key:  # File fill not be encrypted
+                    logging.info("Saved settings file unencrypted")
                     with open("settings.json", "w") as f:
                         json.dump(self.settings, f)
                 else:  # File will be encrypted
+                    logging.info("Saved settings file encrypted")
                     with open("settings.json", "w") as f:
                         _settings = json.dumps(self.settings)
                         f.write(GlobalFuncs.encrypt(self.key, _settings))
@@ -566,7 +588,9 @@ class Settings:
                     with open("settings.json", "w") as f:
                         _settings = json.dumps(self.settings)
                         f.write(GlobalFuncs.encrypt(self.key, _settings))
-                print("Successfully updated " + var + ".")
+                if not admin:  # Don't display the update if this was a command initiated by the program
+                    print("Successfully updated " + var + ".")
+                logging.info("Updated " + var)
             else:
                 # Trying to change a boolean to a string
                 print("This option is toggleable and cannot be manually set. Please use 'toggle' " + var + " instead.")
@@ -578,18 +602,20 @@ class Settings:
                                                                                    "automatic": "all"}).json()
         if "message" in response:
             print("Heartbeat failed: " + response["message"])
+            logging.warning("Heartbeat failed: " + response["message"])
         elif "bumped" in response:
             if int(response["bumped"]) != 0:
                 print("Sent a heartbeat to backpack.tf. Bumped " + str(response["bumped"]) + " listings.")
             else:
                 print("Sent a heartbeat to backpack.tf.")
-        else:
-            print("Error sending heartbeat: " + response["message"])
+            logging.info("Sent heartbeat")
+
         self.lasthb = time.time()
 
 
 # Initialise the settings
 info = Settings()
+logging.info("Initialised settings")
 
 # Value of metal
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
@@ -608,6 +634,7 @@ else:  # Api request failed - most likely because the api key is wrong
     elif change == "apikey":
         info.update("apikey", input("Please enter your backpack.tf api key.\n"))
     exit()
+logging.info("Loaded currency info")
 
 identity_secret = info.settings["identity_secret"]
 while len(identity_secret) % 4 != 0:
@@ -624,18 +651,22 @@ else:  # Shared secret is not set, use a one time code
 
 manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
                               identity_secret=identity_secret, poll_delay=10)
+logging.info("Initialised manager and steam client")
 
 if commands == "msv":
     commandListener = threading.Thread(target=listener)
     commandListener.start()
+    logging.info("Started windows listener")
 elif commands == "get":
     commandListener = threading.Thread(target=listener_unix)
     commandListener.start()
+    logging.info("Started unix listener")
 
 
 @manager.on("logged_on")
 async def logon():
     print("Logged in.")
+    logging.info("Logged in")
 
 
 @manager.on("end_poll")
@@ -647,16 +678,43 @@ async def poll_end():
 @manager.on("error")
 async def error(message):
     print("An error occured: " + str(message))
+    logging.warning("Error picked up: " + str(message))
 
 
 @manager.on("trade_accepted")
 async def accepted_offer(trade):
     print("Trade " + trade.tradeofferid + " was accepted")
+    logging.debug("Accepted trade " + trade.tradeofferid)
 
 
 @manager.on("trade_declined")
-async def accepted_offer(trade):
+async def declined_offer(trade):
     print("Trade " + trade.tradeofferid + " was declined")
+    logging.debug("Declined trade " + trade.tradeofferid)
+
+
+@manager.on("trade_canceled")
+async def cancelled_offer(trade):
+    print("Trade " + trade.tradeofferid + " was cancelled")
+    logging.debug("Cancelled trade " + trade.tradeofferid)
+
+
+@manager.on("trade_expired")
+async def expired_trade(trade):
+    print("Trade " + trade.tradeofferid + " expired")
+    logging.debug("Expired trade " + trade.tradeofferid)
+
+
+@manager.on("trade_countered")
+async def countered_trade(trade):
+    print("Trade " + trade.tradeofferid + " was countered")
+    logging.debug("Countered trade " + trade.tradeofferid)
+
+
+@manager.on("trade_state_changed")
+async def changed_trade(trade):
+    print("Trade " + trade.tradeofferid + " changed to an unexpected state")
+    logging.debug("Unexpected state of trade " + trade.tradeofferid)
 
 
 @manager.on("new_trade")
@@ -673,39 +731,55 @@ async def new_offer(offer):
     # See if they have any bans
     response = requests.get("https://backpack.tf/api/users/info/v1", json={"key": info.settings["apikey"],
                                                                            "steamids": their_id}).json()
+
     print("Received offer " + offer.tradeofferid + " from " + response["users"][their_id]["name"] + ".")
+    logging.info("Received " + offer.tradeofferid)
+
     if "bans" in response["users"][their_id]:
         user = response["users"][their_id]["bans"]
     else:
         user = []
+
     if their_id in info.settings["owners"]:  # Accept if the user is whitelisted
         print("Accepting Trade: Offer from owner")
         accept = True
         handled = True
+        logging.info("Accepting: User is owner")
     elif "steamrep_scammer" in user or "all" in user:  # Decline if the user is banned or a a steamrep scammer
         print("Declining Trade: User is a banned on steamrep or backpack.tf")
         decline = True
         handled = True
+        logging.info("Declining: User is scammer")
     elif not offer.items_to_give and info.settings["acceptgifts"]:
         # Accept if it is a gift offer and gift offers are enabled
         print("Accepting Trade: not losing any items.")
         accept = True
         handled = True
+        logging.info("Accepting: gift offer")
+    elif not offer.items_to_give:  # Offer is gift offer: we don't accept these
+        print("Declining Trade: Offer appears to be a gift")
+        handled = True
+        decline = True
+        logging.info("Declining: gift offer")
     else:  # Otherwise, check all of the items
         # No items checked yet
         lose_val = 0
         lose_valk = 0
         gain_val = 0
         gain_valk = 0
+
         # Check all the items we are receiving
+        logging.info("checking receiving items...")
         for item in offer.items_to_receive:
             name = item.market_name  # Grab a name to start with that is ok
             if name in currencies:  # If the item is metal
                 names_receiving.append(name)
                 gain_val += currencies[name]
+                logging.info(name + ": currency")
             elif name == "Mann Co. Supply Crate Key":  # If the item is a key
                 gain_valk += 1
                 names_receiving.append(name)
+                logging.info(name + ": key")
             else:
                 name = GlobalFuncs.name_item(item)  # Get a usable name
                 names_receiving.append(name)
@@ -716,17 +790,24 @@ async def new_offer(offer):
                         gain_val += round(18 * listing["metal"])
                     if "keys" in listing:
                         gain_valk += listing["keys"]
+
+                    logging.info(name + ": added value")
                 else:  # Decline - we're not buying this item
+                    logging.info(name + ": no listing")
                     decline = True
+
         # Check all the items we are losing
+        logging.info("checking losing items...")
         for item in offer.items_to_give:
             name = item.market_name  # Grab a name to start with that is ok
             if name in currencies:  # If the item is metal
                 names_losing.append(name)
                 lose_val += currencies[name]
+                logging.info(name + ": currency")
             elif name == "Mann Co. Supply Crate Key":  # If the item is a key
                 lose_valk += 1
                 names_losing.append(name)
+                logging.info(name + ": currency")
             else:
                 name = GlobalFuncs.name_item(item)  # Get a usable name
                 names_losing.append(name)
@@ -739,6 +820,8 @@ async def new_offer(offer):
                             lose_val += round(18 * listing["metal"])
                         if "keys" in listing:
                             lose_valk += listing["keys"]
+
+                        logging.info(name + ": added value")
                     else:  # We only want to sell the items with listings
                         listings = response["sell"]["listings"]
                         # We have not found a listing for this item yet
@@ -750,20 +833,28 @@ async def new_offer(offer):
                                     lose_val += round(18 * listing["currencies"]["metal"])
                                 if "keys" in listing["currencies"]:
                                     lose_valk += listing["currencies"]["keys"]
+
+                                logging.info(name + ": added value")
+                                break
                         if not found:  # We are not selling this item
                             decline = True
                             handled = True
+                            logging.info(name + ": no listing (specific)")
                 else:  # We don't have any listings for this
                     handled = True
                     decline = True
+                    logging.info(name + ": no listing")
+
         if handled:  # We've already decided what to do
             pass
         elif lose_val <= gain_val and lose_valk <= gain_valk:  # The value is good
             accept = True
             handled = True
+            logging.info("value is good")
         elif info.settings["currency_exchange"] and (lose_valk > gain_valk or gain_valk > lose_valk):
             # The value is not good, we'll try to move around some keys into ref and see if it matches (this option
             #                                                                                           is enabled)
+            logging.info("moving keys")
 
             # We'll assume the offer is bad at this point
             handled = True
@@ -778,6 +869,8 @@ async def new_offer(offer):
                     key_s = round(18 * response["sell"]["listings"][0]["currencies"]["metal"])
                 if response["buy"]["total"] > 0:
                     key_b = round(18 * response["buy"]["listings"][0]["currencies"]["metal"])
+                logging.info("got custom key price")
+
             if lose_valk > gain_valk:  # See if changing our keys into ref works
                 while lose_valk > 0:
                     lose_valk -= 1
@@ -785,6 +878,7 @@ async def new_offer(offer):
                     if lose_val <= gain_val and lose_valk <= gain_valk:  # It matches up
                         accept = True
                         handled = True
+                        logging.info("moving keys worked, 1")
                         break
             elif gain_valk > lose_valk:  # See if changing their keys into ref works
                 while gain_valk > 0:
@@ -793,6 +887,12 @@ async def new_offer(offer):
                     if lose_val <= gain_val and lose_valk <= gain_valk:  # It matches up
                         accept = True
                         handled = True
+                        logging.info("moving keys worked, 2")
+                        break
+        else:  # Offer is incorrect
+            handled = True
+            decline = True
+            logging.info("got to the end")
     if handled:  # We've made a decision
         # Count how many of each item
         receiving = {}
@@ -818,22 +918,29 @@ async def new_offer(offer):
         if accept:  # If we're accepting the offer
             if await offer.accept():  # If the offer was accepted correctly
                 print("Offer Accepted: " + text)
+                logging.info("Offer Accepted: " + text)
             else:  # The offer failed to be accepted for whatever reason
                 print("Failed to accept offer: " + text)
+                logging.info("Failed to accept offer: " + text)
         elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
             print("Offer Declined: " + text)
+            logging.info("Offer Declined: " + text)
         else:  # If the offer should have been declined
             print("Offer was invalid, leaving:" + text)
+            logging.info("Offer was invalid, leaving:" + text)
     else:  # This should never happen
         print("For some reason the offer was not accepted.")
         print("Please create an issue on github: https://github.com/mninc/automatic-v2/issues")
+        logging.warning("offer missed")
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
 while True:
     try:
+        logging.info("running manager")
         manager.run_forever()
     except Exception as e:
+        logging.error("manager failed")
         print("Received an error: " + str(e))
         print("Continuing...")
