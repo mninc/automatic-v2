@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.4.1"
+version = "0.4.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -618,7 +618,7 @@ info = Settings()
 logging.info("Initialised settings")
 
 # Value of metal
-currencies = {"Refined Metal": 18, "Reclaimed Metal": 9, "Scrap Metal": 2}
+currencies = {"Refined Metal": 18, "Reclaimed Metal": 6, "Scrap Metal": 2}
 
 # Load key price
 response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
