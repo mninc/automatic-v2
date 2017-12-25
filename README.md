@@ -39,10 +39,14 @@ One way to fix this is to download [this](http://manicbot.me/client.py) file and
 
 If you want `accept_any_sell_order` as False to work you will need to download [this](http://manicbot.me/EconItem.py) and do the same.
 
+You also will need to download [this](http://manicbot.me/EconTradeOffer.py) for reloading offers to work.
+
 On Windows the directory can be found at `C:\Users\<user>\AppData\Local\Programs\Python\Python36-32\lib\site-packages\pytrade\`.
 On linux this can be found at `/usr/local/lib/python3.6/dist-packages/pytrade`.
 If this is incorrect or you are on a mac, open a python shell (`python` from the command line) and type `import pytrade`. 
 Then do `pytrade.__file__`. This should output the directory you need to go to (remove the `/__init__.py` bit)
+
+If you don't like this, blame zwork.
 
 ## Notes on updates
 From 27/12/17 to 01/01/18, I (manic) am on holiday. For this period you will have to find `Zwack010#5682` on discord for help.

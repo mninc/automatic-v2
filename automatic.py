@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.5.4"
+version = "0.5.5"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -873,7 +873,7 @@ async def new_offer(offer):
                         # We have not found a listing for this item yet
                         found = False
                         for listing in listings:
-                            try:
+                            try:  # this is a zwork catch
                                 if int(listing["item"]["id"]) == int(item.assetid):  # This listing is a match
                                     found = True
                                     if "metal" in listing["currencies"]:
@@ -974,17 +974,22 @@ For that reason this trade cannot be properly processed.""")
             else:  # The offer failed to be accepted for whatever reason
                 print("Failed to accept offer: " + text)
                 logging.warning("Failed to accept offer: " + text)
-                await offer.update()  # Reload trade
-                if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
-                    print("Trying to accept offer again...")
-                    logging.info("Trying again...")
-                    if await offer.accept():  # Accepting was successful
-                        print("Offer Accepted: " + text)
-                        logging.info("Offer Accepted: " + text)
-                    else:  # Failed to accept again
-                        print("Failed to accept offer again. Giving up.")
-                        print("Feel free to go and process the offer yourself.")
-                        logging.warning("giving up")
+                try:  # This is a zwork catch - as soon as he can update it it'll be good
+                    await offer.update()  # Reload trade
+                    if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
+                        print("Trying to accept offer again...")
+                        logging.info("Trying again...")
+                        if await offer.accept():  # Accepting was successful
+                            print("Offer Accepted: " + text)
+                            logging.info("Offer Accepted: " + text)
+                        else:  # Failed to accept again
+                            print("Failed to accept offer again. Giving up.")
+                            print("Feel free to go and process the offer yourself.")
+                            logging.warning("giving up")
+                except KeyError:
+                    print("""Please note that for the bot to reload trades to try and accept them again you will need to
+read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
+For that reason this trade cannot be reloaded and an attempt to reload cannot be made.""")
         elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
             print("Offer Declined: " + text)
