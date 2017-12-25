@@ -34,9 +34,12 @@ After installing python you may need to run `/Applications/Python\ 3.6/Install\ 
 ## Notes on errors
 If you get an error ending with `message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8'`, 
 this is because one of the modules this program uses needs fixing. The only person with the ability to fix this has a broken PC so this cannot be done at the module level. 
+
 One way to fix this is to download [this](http://manicbot.me/client.py) file and place it in the directory of the module. 
+
 If you want `accept_any_sell_order` as False to work you will need to download [this](http://manicbot.me/EconItem.py) and do the same.
-On Windows this can be found at `C:\Users\<user>\AppData\Local\Programs\Python\Python36-32\lib\site-packages\pytrade\`.
+
+On Windows the directory can be found at `C:\Users\<user>\AppData\Local\Programs\Python\Python36-32\lib\site-packages\pytrade\`.
 On linux this can be found at `/usr/local/lib/python3.6/dist-packages/pytrade`.
 If this is incorrect or you are on a mac, open a python shell (`python` from the command line) and type `import pytrade`. 
 Then do `pytrade.__file__`. This should output the directory you need to go to (remove the `/__init__.py` bit)
