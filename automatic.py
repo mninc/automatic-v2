@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.5.1"
+version = "0.5.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -883,7 +883,7 @@ async def new_offer(offer):
 
                                     logging.info(name + ": added value")
                                     break
-                            except NameError:
+                            except AttributeError:
                                 print("""Please note that for 'accept_any_sell_order' as False to work you will need to 
 read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
 Alternatively you can set 'accept_any_sell_order' to True.
