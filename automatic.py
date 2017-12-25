@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.5.0"
+version = "0.5.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -873,8 +873,8 @@ async def new_offer(offer):
                         # We have not found a listing for this item yet
                         found = False
                         for listing in listings:
-                            if item.id:
-                                if int(listing["item"]["id"]) == int(item.id):  # This listing is a match
+                            try:
+                                if int(listing["item"]["id"]) == int(item.assetid):  # This listing is a match
                                     found = True
                                     if "metal" in listing["currencies"]:
                                         lose_val += round(18 * listing["currencies"]["metal"])
@@ -883,7 +883,7 @@ async def new_offer(offer):
 
                                     logging.info(name + ": added value")
                                     break
-                            else:
+                            except NameError:
                                 print("""Please note that for 'accept_any_sell_order' as False to work you will need to 
 read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
 Alternatively you can set 'accept_any_sell_order' to True.
