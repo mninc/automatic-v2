@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.5.3"
+version = "0.5.4"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -974,7 +974,7 @@ For that reason this trade cannot be properly processed.""")
             else:  # The offer failed to be accepted for whatever reason
                 print("Failed to accept offer: " + text)
                 logging.warning("Failed to accept offer: " + text)
-                await offer.reload()  # Reload trade
+                await offer.update()  # Reload trade
                 if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
                     print("Trying to accept offer again...")
                     logging.info("Trying again...")
