@@ -51,14 +51,14 @@ if installed_package:
     exit()
 
 import requests
-from pytrade import login, client
+from pytrade import login, client, steam_enums
 
 # Set up logging
 logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.5.2"
+version = "0.5.3"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -973,7 +973,18 @@ For that reason this trade cannot be properly processed.""")
                 logging.info("Offer Accepted: " + text)
             else:  # The offer failed to be accepted for whatever reason
                 print("Failed to accept offer: " + text)
-                logging.info("Failed to accept offer: " + text)
+                logging.warning("Failed to accept offer: " + text)
+                await offer.reload()  # Reload trade
+                if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
+                    print("Trying to accept offer again...")
+                    logging.info("Trying again...")
+                    if await offer.accept():  # Accepting was successful
+                        print("Offer Accepted: " + text)
+                        logging.info("Offer Accepted: " + text)
+                    else:  # Failed to accept again
+                        print("Failed to accept offer again. Giving up.")
+                        print("Feel free to go and process the offer yourself.")
+                        logging.warning("giving up")
         elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
             print("Offer Declined: " + text)
@@ -982,7 +993,7 @@ For that reason this trade cannot be properly processed.""")
             print("Leaving offer. You can accept or decline this offer yourself.")
             print(text)
         else:  # If the offer should have been declined
-            print("Offer was invalid, leaving:" + text)
+            print("Offer was invalid, leaving: " + text)
             print("Feel free to accept or decline this offer yourself.")
             logging.info("Offer was invalid, leaving:" + text)
     else:  # This should never happen
