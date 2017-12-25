@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.4.2"
+version = "0.5.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -121,7 +121,7 @@ class GlobalFuncs:
 
     # Returns a classifieds search for the item specified
     @staticmethod
-    def search(name, user):
+    def search(name, user, unusual=False, elevated2=False):
         # Take off any unneccesary prefixes
         if name[:4] == "The ":
             name = name[4:]
@@ -135,9 +135,12 @@ class GlobalFuncs:
 
         # Assume it's unique
         quality = 6
+        elevated = False
+        use_elevated = False
         for _quality in qualities:
             if name.startswith(_quality):
                 quality = qualities[_quality]
+                elevated = quality
                 name = name[len(_quality) + 1:]
 
         # Assume it has no killstreak
@@ -152,6 +155,7 @@ class GlobalFuncs:
         if name.startswith("Australium"):
             australium = 1
             name = name[11:]
+            quality = qualities["Strange"]
 
         # Assume it's not unusual
         effect = False
@@ -159,6 +163,9 @@ class GlobalFuncs:
             if name.startswith(_effect):
                 effect = effects[_effect]
                 name = name[len(_effect) + 1:]
+                quality = qualities["Unusual"]
+                if elevated:  # Item already has quality (probably Strange Unusual)
+                    use_elevated = True
 
         data = {"key": info.settings["apikey"],
                 "steamid": user,
@@ -173,6 +180,14 @@ class GlobalFuncs:
 
         if effect:
             data["particle"] = effect
+        if use_elevated:
+            data["elevated"] = elevated
+
+        # Things we were told at the beginning
+        if unusual:
+            data["quality"] = qualities["Unusual"]
+        if elevated2:
+            data["elevated"] = elevated
 
         while True:
             response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
@@ -722,12 +737,16 @@ async def new_offer(offer):
     # We haven't made a decision yet
     decline = False
     accept = False
-    handled = False
+    leave = False  # Don't accept or decline the trade
+    handled = False  # We know what to do with the trade
+
     # The names of the items in the trade for display later
     names_receiving = []
     names_losing = []
+
     # Get their steamid64
     their_id = offer.steamid_other.toString()
+
     # See if they have any bans
     response = requests.get("https://backpack.tf/api/users/info/v1", json={"key": info.settings["apikey"],
                                                                            "steamids": their_id}).json()
@@ -792,9 +811,36 @@ async def new_offer(offer):
                         gain_valk += listing["keys"]
 
                     logging.info(name + ": added value")
-                else:  # Decline - we're not buying this item
+                else:  # There is no listing for this item
                     logging.info(name + ": no listing")
-                    decline = True
+                    # Check if we can find a buy listing for this unusual (not this specific effect)
+                    unusual = False
+                    elevated = False
+                    for _effect in effects:
+                        if name.startswith(_effect):
+                            unusual = True
+                            name = name[len(_effect) + 1:]  # Take off effect for search
+                        elif name.startswith("Strange " + _effect):
+                            unusual = True
+                            name = name[len(_effect) + 9:]  # Take off effect and strange for search
+                            elevated = qualities["Strange"]
+                    if unusual:
+                        logging.info(name + "")
+                        response = GlobalFuncs.search(name, info.settings["sid"], unusual=True, elevated2=elevated)
+                        if response["buy"]["total"] > 0:  # If we have any listings
+                            listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
+                            if "metal" in listing:
+                                gain_val += round(18 * listing["metal"])
+                            if "keys" in listing:
+                                gain_valk += listing["keys"]
+
+                            logging.info(name + ": added value")
+                        else:
+                            handled = True
+                            decline = True
+                    else:
+                        handled = True
+                        decline = True
 
         # Check all the items we are losing
         logging.info("checking losing items...")
@@ -827,15 +873,21 @@ async def new_offer(offer):
                         # We have not found a listing for this item yet
                         found = False
                         for listing in listings:
-                            if int(listing["item"]["id"]) == int(item.id):  # This listing is a match
-                                found = True
-                                if "metal" in listing["currencies"]:
-                                    lose_val += round(18 * listing["currencies"]["metal"])
-                                if "keys" in listing["currencies"]:
-                                    lose_valk += listing["currencies"]["keys"]
+                            if item.id:
+                                if int(listing["item"]["id"]) == int(item.id):  # This listing is a match
+                                    found = True
+                                    if "metal" in listing["currencies"]:
+                                        lose_val += round(18 * listing["currencies"]["metal"])
+                                    if "keys" in listing["currencies"]:
+                                        lose_valk += listing["currencies"]["keys"]
 
-                                logging.info(name + ": added value")
-                                break
+                                    logging.info(name + ": added value")
+                                    break
+                            else:
+                                print("""Please note that for 'accept_any_sell_order' as False to work you will need to 
+read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
+Alternatively you can set 'accept_any_sell_order' to True.
+For that reason this trade cannot be properly processed.""")
                         if not found:  # We are not selling this item
                             decline = True
                             handled = True
@@ -926,8 +978,12 @@ async def new_offer(offer):
             await offer.decline()
             print("Offer Declined: " + text)
             logging.info("Offer Declined: " + text)
+        elif leave:
+            print("Leaving offer. You can accept or decline this offer yourself.")
+            print(text)
         else:  # If the offer should have been declined
             print("Offer was invalid, leaving:" + text)
+            print("Feel free to accept or decline this offer yourself.")
             logging.info("Offer was invalid, leaving:" + text)
     else:  # This should never happen
         print("For some reason the offer was not accepted.")
