@@ -97,7 +97,7 @@ class GlobalFuncs:
         name = item.market_name
         # Assume it's craftable
         craftable = True
-        # Assume it's not unusual with no effecr
+        # Assume it's not unusual with no effect
         effect = ""
         unusual = False
         if name.startswith("Unusual "):
