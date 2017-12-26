@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.6.0"
+version = "0.6.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -1014,7 +1014,7 @@ For that reason this trade cannot be properly processed.""")
                 print("There was an error accepting the trade.")
                 print("Logging in again...")
                 logging.warning("Error accepting trade")
-                manager.login(steam_client)
+                loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
                 time.sleep(2)
                 if await offer.accept():
                     print("Offer Accepted: " + text)
