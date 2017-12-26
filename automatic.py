@@ -58,7 +58,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.5.5"
+version = "0.6.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -218,14 +218,9 @@ class GlobalFuncs:
         elif command.startswith("toggle"):
             # Toggle a boolean in the settings array
             command = command[7:]
-            if command.startswith("acceptgifts"):
-                info.update("acceptgifts", not info.settings["acceptgifts"], toggle=True)
-            elif command.startswith("accept_any_sell_order"):
-                info.update("accept_any_sell_order", not info.settings["accept_any_sell_order"], toggle=True)
-            elif command.startswith("currency_exchange"):
-                info.update("currency_exchange", not info.settings["currency_exchange"], toggle=True)
-            elif command.startswith("use_my_key_price"):
-                info.update("use_my_key_price", not info.settings["use_my_key_price"], toggle=True)
+            for option in info.bools:
+                if command.startswith(option):
+                    info.update(option, not info.settings[option], toggle=True)
         elif command.startswith("add"):
             # Add a variable to a list
             command = command[4:]
@@ -269,6 +264,10 @@ Commands:
                                                       Uses the backpack.tf price by default
                                   use_my_key_price - uses the price on your sell or buy listings for keys. 
                                                      'currency_exchange' must be set to True for this to work
+                                  half_scraps - count craftable weapons as half a scrap - a list of these weapons is
+                                                available at 
+                                                https://github.com/mninc/automatic-v2/blob/master/halves.json
+                                                for viewing and curation
     add - Adds a variable to a list. Lists can be displayed with the 'change' command
           Settings to change - owners - a list of id64s whose offers will automatically be accepted
     remove - Removes a variable from a list. This item must already be in the list for this to work
@@ -485,7 +484,8 @@ class Settings:
         # Key for decrypting the settings file
         self.key = None
         # Variables in the settings that need to be True or False
-        self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price"]
+        self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price", "half_scraps",
+                      "decline_offers"]
         # Default value of variables (for when the bot updates adding new options)
         self.defaults = {"username": "",
                          "password": "",
@@ -500,7 +500,8 @@ class Settings:
                          "accept_any_sell_order": False,
                          "currency_exchange": False,
                          "use_my_key_price": False,
-                         "decline_offers": False}
+                         "decline_offers": False,
+                         "half_scraps": False}
         try:
             # Open an unencrypted file
             with open("settings.json", "r") as f:
@@ -567,6 +568,7 @@ class Settings:
                 self.settings["currency_exchange"] = False
                 self.settings["use_my_key_price"] = False
                 self.settings["decline_offers"] = False
+                self.settings["half_scraps"] = False
 
                 # Get an encryption key
                 self.key = input("Please enter an encryption key to encrypt your data. You will have to enter this "
@@ -812,7 +814,6 @@ async def new_offer(offer):
 
                     logging.info(name + ": added value")
                 else:  # There is no listing for this item
-                    logging.info(name + ": no listing")
                     # Check if we can find a buy listing for this unusual (not this specific effect)
                     unusual = False
                     elevated = False
@@ -825,7 +826,6 @@ async def new_offer(offer):
                             name = name[len(_effect) + 9:]  # Take off effect and strange for search
                             elevated = qualities["Strange"]
                     if unusual:
-                        logging.info(name + "")
                         response = GlobalFuncs.search(name, info.settings["sid"], unusual=True, elevated2=elevated)
                         if response["buy"]["total"] > 0:  # If we have any listings
                             listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
@@ -834,13 +834,21 @@ async def new_offer(offer):
                             if "keys" in listing:
                                 gain_valk += listing["keys"]
 
-                            logging.info(name + ": added value")
+                            logging.info(name + ": added value from generic unusual listing")
                         else:
                             handled = True
                             decline = True
+                            logging.info(name + ": no generic listing")
                     else:
-                        handled = True
-                        decline = True
+                        if name.startswith("The "):
+                            name = name[4:]
+                        if name in halves and info.settings["half_scaps"]:
+                            gain_val += 1
+                            logging.info(name + ": half-scrap")
+                        else:
+                            handled = True
+                            decline = True
+                            logging.info(name + ": no listing")
 
         # Check all the items we are losing
         logging.info("checking losing items...")
@@ -889,13 +897,24 @@ read the README again. You can find that here - https://github.com/mninc/automat
 Alternatively you can set 'accept_any_sell_order' to True.
 For that reason this trade cannot be properly processed.""")
                         if not found:  # We are not selling this item
-                            decline = True
-                            handled = True
+                            if name.startswith("The "):
+                                name = name[4:]
+                            if name in halves:
+                                lose_val += 1
+                            else:
+                                handled = True
+                                decline = True
                             logging.info(name + ": no listing (specific)")
                 else:  # We don't have any listings for this
-                    handled = True
-                    decline = True
-                    logging.info(name + ": no listing")
+                    if name.startswith("The "):
+                        name = name[4:]
+                    if name in halves and info.settings["half_scraps"]:
+                        lose_val += 1
+                        logging.info(name + ": half-scrap")
+                    else:
+                        handled = True
+                        decline = True
+                        logging.info(name + ": no listing")
 
         if handled:  # We've already decided what to do
             pass
@@ -968,28 +987,42 @@ For that reason this trade cannot be properly processed.""")
             losel.append(name + " x" + str(amount))
         text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
         if accept:  # If we're accepting the offer
-            if await offer.accept():  # If the offer was accepted correctly
-                print("Offer Accepted: " + text)
-                logging.info("Offer Accepted: " + text)
-            else:  # The offer failed to be accepted for whatever reason
-                print("Failed to accept offer: " + text)
-                logging.warning("Failed to accept offer: " + text)
-                try:  # This is a zwork catch - as soon as he can update it it'll be good
-                    await offer.update()  # Reload trade
-                    if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
-                        print("Trying to accept offer again...")
-                        logging.info("Trying again...")
-                        if await offer.accept():  # Accepting was successful
-                            print("Offer Accepted: " + text)
-                            logging.info("Offer Accepted: " + text)
-                        else:  # Failed to accept again
-                            print("Failed to accept offer again. Giving up.")
-                            print("Feel free to go and process the offer yourself.")
-                            logging.warning("giving up")
-                except KeyError:
-                    print("""Please note that for the bot to reload trades to try and accept them again you will need to
-read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
-For that reason this trade cannot be reloaded and an attempt to reload cannot be made.""")
+            try:
+                if await offer.accept():  # If the offer was accepted correctly
+                    print("Offer Accepted: " + text)
+                    logging.info("Offer Accepted: " + text)
+                else:  # The offer failed to be accepted for whatever reason
+                    print("Failed to accept offer: " + text)
+                    logging.warning("Failed to accept offer: " + text)
+                    try:  # This is a zwork catch - as soon as he can update it it'll be good
+                        await offer.update()  # Reload trade
+                        if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
+                            print("Trying to accept offer again...")
+                            logging.info("Trying again...")
+                            if await offer.accept():  # Accepting was successful
+                                print("Offer Accepted: " + text)
+                                logging.info("Offer Accepted: " + text)
+                            else:  # Failed to accept again
+                                print("Failed to accept offer again. Giving up.")
+                                print("Feel free to go and process the offer yourself.")
+                                logging.warning("giving up")
+                    except KeyError:
+                        print("""Please note that for the bot to reload trades to try and accept them again you will need to
+    read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
+    For that reason this trade cannot be reloaded and an attempt to reload cannot be made.""")
+            except AttributeError:  # NoneType object has no attribute 'get'
+                print("There was an error accepting the trade.")
+                print("Logging in again...")
+                logging.warning("Error accepting trade")
+                manager.login(steam_client)
+                time.sleep(2)
+                if await offer.accept():
+                    print("Offer Accepted: " + text)
+                    logging.info("Offer Accepted: " + text)
+                else:
+                    print("Failed to accept offer: " + text)
+                    logging.warning("Failed to accept offer: " + text)
+
         elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
             print("Offer Declined: " + text)
