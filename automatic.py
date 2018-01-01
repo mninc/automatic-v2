@@ -6,8 +6,10 @@ import threading
 import pip
 import importlib
 import asyncio
-from random import randint
 import logging
+import pkg_resources
+from random import randint
+from distutils.version import LooseVersion
 commands = None
 try:
     # Try and use msvcrt if possible - Windows only
@@ -33,8 +35,7 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "aiohttp": "aiohttp", "rsa": "rsa", "steamid": "steamid", "bs4": "bs4",
-                       "requests": "requests", "pyee": "pyee", "asyncio": "asyncio"}
+nondefault_packages = {"pytrade": "steam-trade", "requests": "requests"}
 
 installed_package = False
 for package in nondefault_packages:
@@ -50,6 +51,13 @@ if installed_package:
     input("Please restart the program now.")
     exit()
 
+# Check pytrade is up to date (can be removed later)
+pytrade_version = LooseVersion(pkg_resources.get_distribution("steam-trade").version)
+if LooseVersion("2.0.0") > pytrade_version:
+    pip.main(["install", "-U", "steam-trade"])
+    input("Package updated, please restart the program now.")
+    exit()
+
 import requests
 from pytrade import login, client, steam_enums
 
@@ -58,7 +66,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.6.1"
+version = "0.7.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -988,40 +996,38 @@ For that reason this trade cannot be properly processed.""")
         text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
         if accept:  # If we're accepting the offer
             try:
-                if await offer.accept():  # If the offer was accepted correctly
+                _offer = await offer.accept()
+                if _offer[0]:  # If the offer was accepted correctly
                     print("Offer Accepted: " + text)
                     logging.info("Offer Accepted: " + text)
                 else:  # The offer failed to be accepted for whatever reason
                     print("Failed to accept offer: " + text)
-                    logging.warning("Failed to accept offer: " + text)
-                    try:  # This is a zwork catch - as soon as he can update it it'll be good
-                        await offer.update()  # Reload trade
-                        if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
-                            print("Trying to accept offer again...")
-                            logging.info("Trying again...")
-                            if await offer.accept():  # Accepting was successful
-                                print("Offer Accepted: " + text)
-                                logging.info("Offer Accepted: " + text)
-                            else:  # Failed to accept again
-                                print("Failed to accept offer again. Giving up.")
-                                print("Feel free to go and process the offer yourself.")
-                                logging.warning("giving up")
-                    except KeyError:
-                        print("""Please note that for the bot to reload trades to try and accept them again you will need to
-    read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
-    For that reason this trade cannot be reloaded and an attempt to reload cannot be made.""")
+                    logging.warning("Failed to accept offer: " + text + "\n" + _offer[1])
+                    await offer.update()  # Reload trade
+                    if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
+                        print("Trying to accept offer again...")
+                        logging.info("Trying again...")
+                        _offer = await offer.accept()
+                        if _offer[0]:  # Accepting was successful
+                            print("Offer Accepted: " + text)
+                            logging.info("Offer Accepted: " + text)
+                        else:  # Failed to accept again
+                            print("Failed to accept offer again. Giving up.")
+                            print("Feel free to go and process the offer yourself.")
+                            logging.warning("giving up\n" + _offer[1])
             except AttributeError:  # NoneType object has no attribute 'get'
                 print("There was an error accepting the trade.")
                 print("Logging in again...")
                 logging.warning("Error accepting trade")
                 loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
                 time.sleep(2)
-                if await offer.accept():
+                _offer = await offer.accept()
+                if _offer[0]:
                     print("Offer Accepted: " + text)
                     logging.info("Offer Accepted: " + text)
                 else:
                     print("Failed to accept offer: " + text)
-                    logging.warning("Failed to accept offer: " + text)
+                    logging.warning("Failed to accept offer: " + text + "\n" + _offer[1])
 
         elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
