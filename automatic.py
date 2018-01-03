@@ -66,7 +66,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.7.1"
+version = "0.7.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
@@ -195,7 +195,7 @@ class GlobalFuncs:
         if unusual:
             data["quality"] = qualities["Unusual"]
         if elevated2:
-            data["elevated"] = elevated
+            data["elevated"] = elevated2
 
         while True:
             response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
