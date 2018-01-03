@@ -35,7 +35,7 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # Packages not included in python by default
-nondefault_packages = {"pytrade": "steam-trade", "requests": "requests"}
+nondefault_packages = {"pytrade": "steam-trade", "requests": "requests", "pytf2": "pytf2"}
 
 installed_package = False
 for package in nondefault_packages:
@@ -60,13 +60,14 @@ if LooseVersion("2.0.2") > pytrade_version:
 
 import requests
 from pytrade import login, client, steam_enums
+from pytf2 import manager, item_data
 
 # Set up logging
 logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.7.3"
+version = "1.0.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 logging.info("version: " + version)
 
@@ -99,116 +100,6 @@ class GlobalFuncs:
             input("Press enter to go to this page.\n")
             webbrowser.open(url, new=2, autoraise=True)
             return input("Please enter your " + thing + ".\n")
-
-    # Parse the item object to form an agreeable name to use. Returns the name
-    @staticmethod
-    def name_item(item):
-        name = item.market_name
-        # Assume it's craftable
-        craftable = True
-        # Assume it's not unusual with no effect
-        effect = ""
-        unusual = False
-        if name.startswith("Unusual "):
-            unusual = True
-        if item.descriptions != list():
-            for line in item.descriptions:
-                if line["value"] == "( Not Usable in Crafting )":
-                    craftable = False
-                elif line["value"].startswith("★ Unusual Effect: ") and unusual:
-                    name = name[8:]
-                    effect = line["value"][18:]
-
-        # Combine craftability and effect where applicable
-        if not craftable and effect:
-            name = "Non-Craftable " + effect + " " + name
-        elif not craftable:
-            name = "Non-Craftable " + name
-        elif effect:
-            name = effect + " " + name
-        return name
-
-    # Returns a classifieds search for the item specified
-    @staticmethod
-    def search(name, user, unusual=False, elevated2=False):
-        # Take off any unneccesary prefixes
-        if name[:4] == "The ":
-            name = name[4:]
-        if name[:14] == "Non-Craftable ":
-            name = name[14:]
-            craftable = -1
-        else:
-            craftable = 1
-        if name[:4] == "The ":
-            name = name[4:]
-
-        # Assume it's unique
-        quality = 6
-        elevated = False
-        use_elevated = False
-        for _quality in qualities:
-            if name.startswith(_quality):
-                quality = qualities[_quality]
-                elevated = quality
-                name = name[len(_quality) + 1:]
-
-        # Assume it has no killstreak
-        killstreak = 0
-        for _killstreak in killstreaks:
-            if name.startswith(_killstreak):
-                killstreak = killstreaks[_killstreak]
-                name = name[len(_killstreak) + 1:]
-
-        # Assume it's not australium
-        australium = -1
-        if name.startswith("Australium"):
-            australium = 1
-            name = name[11:]
-            quality = qualities["Strange"]
-
-        # Assume it's not unusual
-        effect = False
-        for _effect in effects:
-            if name.startswith(_effect):
-                effect = effects[_effect]
-                name = name[len(_effect) + 1:]
-                quality = qualities["Unusual"]
-                if elevated:  # Item already has quality (probably Strange Unusual)
-                    use_elevated = True
-
-        data = {"key": info.settings["apikey"],
-                "steamid": user,
-                "item_names": True,
-                "page_size": 30,
-                "killstreak_tier": str(killstreak),
-                "australium": str(australium),
-                "quality": str(quality),
-                "craftable": str(craftable),
-                "item": name,
-                "fold": 0}
-
-        if effect:
-            data["particle"] = effect
-        if use_elevated:
-            data["elevated"] = elevated
-
-        # Things we were told at the beginning
-        if unusual:
-            data["quality"] = qualities["Unusual"]
-        if elevated2:
-            data["elevated"] = elevated2
-
-        while True:
-            response = requests.get("https://backpack.tf/api/classifieds/search/v1", data=data).json()
-            # Rate limited
-            if "response" in response:
-                # Try and get a request to go through - possible synchronisation in the future to speed this process
-                # up?
-                time.sleep(randint(0, 10))
-            else:
-                break
-
-        return response
 
     # Process an input from a message - allows for future expansion with different input methods
     @staticmethod
@@ -449,8 +340,8 @@ if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__v
     if GlobalFuncs.check("Want me to download it for you?\ny/n\n"):
         # Downloads the new version
         new = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py").content
-        with open("automatic.py", "wb") as f:
-            f.write(new)
+        with open("automatic.py", "wb") as script:
+            script.write(new)
         print("Success!")
         input("You should restart the bot now.")
         exit()
@@ -468,19 +359,9 @@ logging.info("Checked for updates")
 
 # Load some prebuilt half-scrap items and effect name to number reference
 halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").text)
-effects = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/effects.json").json()
-qualities = {"Genuine": 1,
-             "Self-Made": 9,
-             "Strange": 11,
-             "Unique": 6,
-             "Unusual": 5,
-             "Vintage": 3,
-             "Haunted": 13,
-             "Collector's": 14}
-killstreaks = {"None": 0,
-               "Killstreak": 1,
-               "Specialized Killstreak": 2,
-               "Professional Killstreak": 3}
+effects = item_data.effects
+qualities = item_data.qualities
+killstreaks = item_data.killstreaks
 logging.info("Initialised variables")
 
 
@@ -567,7 +448,8 @@ class Settings:
                                                                     " automatically.",
                                                                     "identity secret")
                 self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
-                                                        "Enter the profile URL of the account and copy the 'steamID64'.",
+                                                        "Enter the profile URL of the account and copy the "
+                                                        "'steamID64'.",
                                                         "steam id64")
                 # Settings that are not set at the initialisation of the settings file
                 self.settings["shared_secret"] = None
@@ -602,6 +484,8 @@ class Settings:
             if option not in self.settings:
                 self.update(option, self.defaults[option], toggle=True, admin=True)
 
+        self.tf2_manager = manager.Manager(bp_api_key=self.settings["apikey"])
+
     def update(self, var, newval, toggle=False, admin=False):
         if var in self.settings or admin:  # Check setting exists to be changed
             if var not in self.bools or toggle:
@@ -623,20 +507,18 @@ class Settings:
         else:
             print("That is not an option that can be changed.")
 
-    def heartbeat(self):
-        response = requests.post("https://backpack.tf/api/aux/heartbeat/v1", data={"token": self.settings["token"],
-                                                                                   "automatic": "all"}).json()
-        if "message" in response:
-            print("Heartbeat failed: " + response["message"])
-            logging.warning("Heartbeat failed: " + response["message"])
-        elif "bumped" in response:
-            if int(response["bumped"]) != 0:
-                print("Sent a heartbeat to backpack.tf. Bumped " + str(response["bumped"]) + " listings.")
-            else:
-                print("Sent a heartbeat to backpack.tf.")
-            logging.info("Sent heartbeat")
-
-        self.lasthb = time.time()
+    def search(self, name, unusual=False, set_elevated=False):
+        while True:
+            try:
+                return self.tf2_manager.bp_classifieds_search(
+                            self.tf2_manager.bp_classified_make_data(name, user=self.settings["steamid"],
+                                                                     unusual=unusual,
+                                                                     set_elevated=set_elevated,
+                                                                     fold=0,
+                                                                     page_size=30), parse=False)
+            except Exception as e:
+                logging.debug("search: " + str(e))
+                time.sleep(randint(0, 5))
 
 
 # Initialise the settings
@@ -647,11 +529,11 @@ logging.info("Initialised settings")
 currencies = {"Refined Metal": 18, "Reclaimed Metal": 6, "Scrap Metal": 2}
 
 # Load key price
-response = requests.get("https://backpack.tf/api/IGetCurrencies/v1", data={"key": info.settings["apikey"]}).json()
-if "currencies" not in response:
-    keys = round(18 * response["response"]["currencies"]["keys"]["price"]["value"])
-else:  # Api request failed - most likely because the api key is wrong
-    print("Error loading currencies: " + str(response["response"]))
+try:
+    keys = round(18 *
+                 info.tf2_manager.bp_get_currencies(parse=False)["response"]["currencies"]["keys"]["price"]["value"])
+except Exception as error:  # Api request failed - most likely because the api key is wrong
+    print("Error loading currencies: " + str(error))
     print("If that message says something about the api key being wrong, check that you have got them the right way "
           "round or pasted them correctly.")
     change = input("Enter 'token' or 'apikey' to change one of them.\n")
@@ -675,8 +557,8 @@ else:  # Shared secret is not set, use a one time code
     steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
                                      one_time_code=input("Please enter your steam guard one time code.\n"))
 
-manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
-                              identity_secret=identity_secret, poll_delay=10)
+trade_manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
+                                    identity_secret=identity_secret, poll_delay=10)
 logging.info("Initialised manager and steam client")
 
 if commands == "msv":
@@ -689,61 +571,78 @@ elif commands == "get":
     logging.info("Started unix listener")
 
 
-@manager.on("logged_on")
+@trade_manager.on("logged_on")
 async def logon():
     print("Logged in.")
     logging.info("Logged in")
 
 
-@manager.on("end_poll")
+@trade_manager.on("end_poll")
 async def poll_end():
     if time.time() - info.lasthb > 100:  # If it has been 100 seconds since sending the last heartbeat
-        info.heartbeat()
+        try:
+            bumped = info.tf2_manager.bp_send_heartbeat()
+            logging.info("sent heartbeat")
+            if bumped:
+                print("Sent a heartbeat to backpack.tf. Bumped " + str(bumped) + " listings.")
+            else:
+                print("Sent a heartbeat to backpack.tf.")
+        except Exception as e:
+            print("Error sending heartbeat: " + str(e))
+            logging.info("Error sending heartbeat: " + str(e))
+        info.lasthb = time.time()
 
 
-@manager.on("error")
+@trade_manager.on("poll_error")
+async def poll_error(message):
+    print("A poll error occured: " + str(message))
+    print("Continuing as normal.")
+    logging.warning("A poll error occured: " + str(message))
+
+
+@trade_manager.on("error")
 async def error(message):
     print("An error occured: " + str(message))
     logging.warning("Error picked up: " + str(message))
 
 
-@manager.on("trade_accepted")
+@trade_manager.on("trade_accepted")
 async def accepted_offer(trade):
     print("Trade " + trade.tradeofferid + " was accepted")
     logging.debug("Accepted trade " + trade.tradeofferid)
 
 
-@manager.on("trade_declined")
+@trade_manager.on("trade_declined")
 async def declined_offer(trade):
     print("Trade " + trade.tradeofferid + " was declined")
     logging.debug("Declined trade " + trade.tradeofferid)
 
 
-@manager.on("trade_canceled")
+@trade_manager.on("trade_canceled")
 async def cancelled_offer(trade):
     print("Trade " + trade.tradeofferid + " was cancelled")
     logging.debug("Cancelled trade " + trade.tradeofferid)
 
 
-@manager.on("trade_expired")
+@trade_manager.on("trade_expired")
 async def expired_trade(trade):
     print("Trade " + trade.tradeofferid + " expired")
     logging.debug("Expired trade " + trade.tradeofferid)
 
 
-@manager.on("trade_countered")
+@trade_manager.on("trade_countered")
 async def countered_trade(trade):
     print("Trade " + trade.tradeofferid + " was countered")
     logging.debug("Countered trade " + trade.tradeofferid)
 
 
-@manager.on("trade_state_changed")
+@trade_manager.on("trade_state_changed")
 async def changed_trade(trade):
     print("Trade " + trade.tradeofferid + " changed to an unexpected state")
     logging.debug("Unexpected state of trade " + trade.tradeofferid)
 
 
-@manager.on("new_trade")
+@trade_manager.on("new_trade")
 async def new_offer(offer):
     # We haven't made a decision yet
     decline = False
@@ -758,24 +657,15 @@ async def new_offer(offer):
     # Get their steamid64
     their_id = offer.steamid_other.toString()
 
-    # See if they have any bans
-    response = requests.get("https://backpack.tf/api/users/info/v1", json={"key": info.settings["apikey"],
-                                                                           "steamids": their_id}).json()
-
-    print("Received offer " + offer.tradeofferid + " from " + response["users"][their_id]["name"] + ".")
+    print("Received offer " + offer.tradeofferid + " from " + info.tf2_manager.bp_user_name(their_id) + ".")
     logging.info("Received " + offer.tradeofferid)
-
-    if "bans" in response["users"][their_id]:
-        user = response["users"][their_id]["bans"]
-    else:
-        user = []
 
     if their_id in info.settings["owners"]:  # Accept if the user is whitelisted
         print("Accepting Trade: Offer from owner")
         accept = True
         handled = True
         logging.info("Accepting: User is owner")
-    elif "steamrep_scammer" in user or "all" in user:  # Decline if the user is banned or a a steamrep scammer
+    elif not info.tf2_manager.bp_can_trade(their_id):  # Decline if the user is banned or a a steamrep scammer
         print("Declining Trade: User is a banned on steamrep or backpack.tf")
         decline = True
         handled = True
@@ -811,9 +701,9 @@ async def new_offer(offer):
                 names_receiving.append(name)
                 logging.info(name + ": key")
             else:
-                name = GlobalFuncs.name_item(item)  # Get a usable name
+                name = info.tf2_manager.st_item_to_str(item)  # Get a usable name
                 names_receiving.append(name)
-                response = GlobalFuncs.search(name, info.settings["sid"])  # Classified search for that item
+                response = info.search(name)  # Classified search for that item
                 if response["buy"]["total"] > 0:  # If we have any listings
                     listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
                     if "metal" in listing:
@@ -835,7 +725,7 @@ async def new_offer(offer):
                             name = name[len(_effect) + 9:]  # Take off effect and strange for search
                             elevated = qualities["Strange"]
                     if unusual:
-                        response = GlobalFuncs.search(name, info.settings["sid"], unusual=True, elevated2=elevated)
+                        response = info.search(name, unusual=True, set_elevated=elevated)
                         if response["buy"]["total"] > 0:  # If we have any listings
                             listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
                             if "metal" in listing:
@@ -872,9 +762,9 @@ async def new_offer(offer):
                 names_losing.append(name)
                 logging.info(name + ": currency")
             else:
-                name = GlobalFuncs.name_item(item)  # Get a usable name
+                name = info.tf2_manager.st_item_to_str(item)  # Get a usable name
                 names_losing.append(name)
-                response = GlobalFuncs.search(name, info.settings["sid"])  # Classified search for that item
+                response = info.search(name)  # Classified search for that item
                 if response["sell"]["total"] > 0:  # If we have any listings
                     if info.settings["accept_any_sell_order"]:
                         # If we want to sell all items with that name not just specific items
@@ -890,21 +780,15 @@ async def new_offer(offer):
                         # We have not found a listing for this item yet
                         found = False
                         for listing in listings:
-                            try:  # this is a zwork catch
-                                if int(listing["item"]["id"]) == int(item.assetid):  # This listing is a match
-                                    found = True
-                                    if "metal" in listing["currencies"]:
-                                        lose_val += round(18 * listing["currencies"]["metal"])
-                                    if "keys" in listing["currencies"]:
-                                        lose_valk += listing["currencies"]["keys"]
+                            if int(listing["item"]["id"]) == int(item.assetid):  # This listing is a match
+                                found = True
+                                if "metal" in listing["currencies"]:
+                                    lose_val += round(18 * listing["currencies"]["metal"])
+                                if "keys" in listing["currencies"]:
+                                    lose_valk += listing["currencies"]["keys"]
 
-                                    logging.info(name + ": added value")
-                                    break
-                            except AttributeError:
-                                print("""Please note that for 'accept_any_sell_order' as False to work you will need to 
-read the README again. You can find that here - https://github.com/mninc/automatic-v2/blob/master/README.md .
-Alternatively you can set 'accept_any_sell_order' to True.
-For that reason this trade cannot be properly processed.""")
+                                logging.info(name + ": added value")
+                                break
                         if not found:  # We are not selling this item
                             if name.startswith("The "):
                                 name = name[4:]
@@ -944,7 +828,7 @@ For that reason this trade cannot be properly processed.""")
             key_s = keys
             key_b = keys
             if info.settings["use_my_key_price"]:  # If we want to use our listing
-                response = GlobalFuncs.search("Mann Co. Supply Crate Key", info.settings["sid"])  # Search for our keys
+                response = info.search("Mann Co. Supply Crate Key")  # Search for our keys
                 if response["sell"]["total"] > 0:
                     key_s = round(18 * response["sell"]["listings"][0]["currencies"]["metal"])
                 if response["buy"]["total"] > 0:
@@ -1020,7 +904,7 @@ For that reason this trade cannot be properly processed.""")
                 print("There was an error accepting the trade.")
                 print("Logging in again...")
                 logging.warning("Error accepting trade")
-                loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
+                loop.run_until_complete(asyncio.ensure_future(trade_manager.login(steam_client)))
                 time.sleep(2)
                 _offer = await offer.accept()
                 if _offer[0]:
@@ -1047,11 +931,11 @@ For that reason this trade cannot be properly processed.""")
         logging.warning("offer missed")
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(asyncio.ensure_future(manager.login(steam_client)))
+loop.run_until_complete(asyncio.ensure_future(trade_manager.login(steam_client)))
 while True:
     try:
         logging.info("running manager")
-        manager.run_forever()
+        trade_manager.run_forever()
     except Exception as e:
         logging.error("manager failed")
         print("Received an error: " + str(e))
