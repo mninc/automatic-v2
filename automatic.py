@@ -53,7 +53,7 @@ if installed_package:
 
 # Check pytrade is up to date (can be removed later)
 pytrade_version = LooseVersion(pkg_resources.get_distribution("steam-trade").version)
-if LooseVersion("2.0.0") > pytrade_version:
+if LooseVersion("2.0.2") > pytrade_version:
     pip.main(["install", "-U", "steam-trade"])
     input("Package updated, please restart the program now.")
     exit()
@@ -66,7 +66,7 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.7.0"
+version = "0.7.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 install_updates = True
