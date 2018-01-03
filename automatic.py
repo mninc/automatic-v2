@@ -66,8 +66,9 @@ logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asct
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "0.7.2"
+version = "0.7.3"
 print("unofficial backpack.tf automatic v2 version " + version)
+logging.info("version: " + version)
 
 install_updates = True
 
