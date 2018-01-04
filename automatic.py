@@ -517,7 +517,7 @@ class Settings:
                                                                      fold=0,
                                                                      page_size=30), parse=False)
             except Exception as e:
-                logging.debug("search: " + str(e))
+                logging.warning("search: " + str(e))
                 time.sleep(randint(0, 5))
 
 
