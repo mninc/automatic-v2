@@ -63,11 +63,11 @@ from pytrade import login, client, steam_enums
 from pytf2 import manager, item_data
 
 # Set up logging
-logging.basicConfig(filename="automatic.log", level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
+logging.basicConfig(filename="automatic.log", level=logging.DEBUG, format="%(asctime)s:%(levelname)s:%(message)s")
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "1.0.0"
+version = "1.0.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 logging.info("version: " + version)
 
