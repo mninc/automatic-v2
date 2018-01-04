@@ -67,7 +67,7 @@ logging.basicConfig(filename="automatic.log", level=logging.DEBUG, format="%(asc
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "1.0.1"
+version = "1.0.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 logging.info("version: " + version)
 
@@ -511,7 +511,7 @@ class Settings:
         while True:
             try:
                 return self.tf2_manager.bp_classifieds_search(
-                            self.tf2_manager.bp_classified_make_data(name, user=self.settings["steamid"],
+                            self.tf2_manager.bp_classified_make_data(name, user=self.settings["sid"],
                                                                      unusual=unusual,
                                                                      set_elevated=set_elevated,
                                                                      fold=0,
