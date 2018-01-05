@@ -60,7 +60,7 @@ if LooseVersion("2.0.2") > pytrade_version:
 
 # Check pytf2 is up to date (can be removed later)
 pytf2_version = LooseVersion(pkg_resources.get_distribution("pytf2").version)
-if LooseVersion("1.2.0") > pytf2_version:
+if LooseVersion("1.2.1") > pytf2_version:
     pip.main(["install", "-U", "pytf2"])
     input("Package updated, please restart the program now.")
     exit()
@@ -74,7 +74,7 @@ logging.basicConfig(filename="automatic.log", level=logging.DEBUG, format="%(asc
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "1.1.0"
+version = "1.1.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 logging.info("version: " + version)
 
@@ -712,7 +712,7 @@ async def new_offer(offer):
                 names_receiving.append(name)
                 response = info.search(name)  # Classified search for that item
                 if response["buy"]["total"] > 0:  # If we have any listings
-                    if not name.endswith("Kit") and not name.endswith(tuple(item_data.wear)):
+                    if not name.endswith("Kit") and not name.endswith(tuple(item_data.wear_brackets)):
                         listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
                         if "metal" in listing:
                             gain_val += round(18 * listing["metal"])
@@ -791,7 +791,7 @@ async def new_offer(offer):
                 if response["sell"]["total"] > 0:  # If we have any listings
                     if info.settings["accept_any_sell_order"]:
                         # If we want to sell all items with that name not just specific items
-                        if not name.endswith("Kit") and not name.endswith(tuple(item_data.wear)):
+                        if not name.endswith("Kit") and not name.endswith(tuple(item_data.wear_brackets)):
                             listing = response["sell"]["listings"][0]["currencies"]  # Grab the first item
                             if "metal" in listing:
                                 lose_val += round(18 * listing["metal"])
