@@ -58,6 +58,13 @@ if LooseVersion("2.0.2") > pytrade_version:
     input("Package updated, please restart the program now.")
     exit()
 
+# Check pytf2 is up to date (can be removed later)
+pytf2_version = LooseVersion(pkg_resources.get_distribution("pytf2").version)
+if LooseVersion("1.2.0") > pytf2_version:
+    pip.main(["install", "-U", "pytf2"])
+    input("Package updated, please restart the program now.")
+    exit()
+
 import requests
 from pytrade import login, client, steam_enums
 from pytf2 import manager, item_data
@@ -67,7 +74,7 @@ logging.basicConfig(filename="automatic.log", level=logging.DEBUG, format="%(asc
 logging.info("Program started")
 
 # Version number. This is compared to the github version number later
-version = "1.0.2"
+version = "1.1.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 logging.info("version: " + version)
 
@@ -705,13 +712,29 @@ async def new_offer(offer):
                 names_receiving.append(name)
                 response = info.search(name)  # Classified search for that item
                 if response["buy"]["total"] > 0:  # If we have any listings
-                    listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
-                    if "metal" in listing:
-                        gain_val += round(18 * listing["metal"])
-                    if "keys" in listing:
-                        gain_valk += listing["keys"]
-
-                    logging.info(name + ": added value")
+                    if not name.endswith("Kit") and not name.endswith(tuple(item_data.wear)):
+                        listing = response["buy"]["listings"][0]["currencies"]  # Grab the first one
+                        if "metal" in listing:
+                            gain_val += round(18 * listing["metal"])
+                        if "keys" in listing:
+                            gain_valk += listing["keys"]
+                        logging.info(name + ": value added")
+                    else:
+                        found = False
+                        for listing in response["buy"]["listings"]:
+                            if listing["item"]["name"] == name:
+                                listing = listing["currencies"]
+                                if "metal" in listing:
+                                    gain_val += round(18 * listing["metal"])
+                                if "keys" in listing:
+                                    gain_valk += listing["keys"]
+                                found = True
+                                logging.info(name + ": kit value added")
+                                break
+                        if not found:
+                            handled = True
+                            decline = True
+                            logging.info(name + ": kit has no listing")
                 else:  # There is no listing for this item
                     # Check if we can find a buy listing for this unusual (not this specific effect)
                     unusual = False
@@ -768,13 +791,30 @@ async def new_offer(offer):
                 if response["sell"]["total"] > 0:  # If we have any listings
                     if info.settings["accept_any_sell_order"]:
                         # If we want to sell all items with that name not just specific items
-                        listing = response["sell"]["listings"][0]["currencies"]  # Grab the first item
-                        if "metal" in listing:
-                            lose_val += round(18 * listing["metal"])
-                        if "keys" in listing:
-                            lose_valk += listing["keys"]
+                        if not name.endswith("Kit") and not name.endswith(tuple(item_data.wear)):
+                            listing = response["sell"]["listings"][0]["currencies"]  # Grab the first item
+                            if "metal" in listing:
+                                lose_val += round(18 * listing["metal"])
+                            if "keys" in listing:
+                                lose_valk += listing["keys"]
 
-                        logging.info(name + ": added value")
+                            logging.info(name + ": added value")
+                        else:
+                            found = False
+                            for listing in response["sell"]["listings"]:
+                                if listing["item"]["name"] == name:
+                                    listing = listing["currencies"]
+                                    if "metal" in listing:
+                                        lose_val += round(18 * listing["metal"])
+                                    if "keys" in listing:
+                                        lose_valk += listing["keys"]
+                                    found = True
+                                    logging.info(name + ": kit value added")
+                                    break
+                            if not found:
+                                handled = True
+                                decline = True
+                                logging.info(name + ": kit has no listing")
                     else:  # We only want to sell the items with listings
                         listings = response["sell"]["listings"]
                         # We have not found a listing for this item yet
