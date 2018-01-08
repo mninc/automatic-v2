@@ -13,11 +13,7 @@ One important thing to note is that elevated access to the backpack.tf apis is n
 
 You can use the `help` command to see all the commands you can use.
 
-This program is extremely new, and there are likely bugs littered throughout it. If I were you, I wouldn't use this with higher-value items yet.
-
-I am not responsible for any items you lose as a result of using this program.
-
-This program is confirmed to work on Windows and Linux.
+This program is confirmed to work on all operating systems - if you have an issue it most likely isn't because of this.
 
 Feel free to submit an issue or a pull request.
 
@@ -38,7 +34,7 @@ Users then wanting to encrypt their file with the new method should save [this](
 
 ## TODO list
 * Get confirmation there are no more bugs (there probably are)
-* Build package for distribution that doesn't require a python installation
+* Build package for distribution that doesn't require a python installation - this is going to be done when there are definitely no more issues with this at all. The auto-updater will most likely have to be removed at this point, making it impossible to push smaller updates for bugs.
 
 ### TODO list history
 * Make generic unusual buy orders work - Completed
