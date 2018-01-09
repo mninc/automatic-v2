@@ -1,368 +1,88 @@
 # Imports
 import time
-import webbrowser
-import json
 import threading
-import pip
-import importlib
+import os
 import asyncio
+import pip
 import logging
-import pkg_resources
-from random import randint
-from distutils.version import LooseVersion
+import importlib
 commands = None
 try:
     # Try and use msvcrt if possible - Windows only
-    import msvcrt
+    importlib.import_module("msvcrt")
     commands = "msv"
 except ImportError:
     # msvcrt is not available
-    msvcrt = None
     commands = "get"
 
-    # an alternative for msvcrt - Unix only
-    import sys
-    import tty
-    import termios
 
-    def getch():
-        fd = sys.stdin.fileno()
-        old = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            return sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+# Version number. This is compared to the github version number later
+version = "2.0.0"
+print("unofficial backpack.tf automatic v2 version " + version)
 
-# Packages not included in python by default
+# Update the main file
+install_updates = True
+
+# Current location
+directory = os.path.dirname(os.path.abspath(__file__))
+
+# Packages to be checked for existence or version
 nondefault_packages = {"pytrade": "steam-trade", "requests": "requests", "pytf2": "pytf2"}
+force_version = {"steam-trade": "2.0.4", "pytf2": "1.2.1"}
+our_modules = {"encryption": "1.0.0", "basic_functions": "1.0.0", "settings": "1.0.0", "listener": "1.0.0",
+               "update_checker": "1.0.0"}
+
 
 installed_package = False
-for package in nondefault_packages:
+try:
+    import update_checker
+except (ModuleNotFoundError, ImportError):
     try:
-        importlib.import_module(package)
+        import requests
     except (ModuleNotFoundError, ImportError):
-        print("Package '" + package + "' not found, will attempt to install now.")
-        pip.main(["install", nondefault_packages[package]])
+        pip.main(["install", "requests"])
+        import requests
+    script = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/update_checker.py")
+    with open(directory + "/update_checker.py", "wb") as f:
+        f.write(script.content)
+    import update_checker
+
+for _module, alt in nondefault_packages.items():
+    if not update_checker.pypi(_module, alt):
         installed_package = True
-        print("Package installed.")
+for _module, _version in force_version.items():
+    if not update_checker.check_version(_module, _version):
+        installed_package = True
+for _module, _version in our_modules.items():
+    if not update_checker.check_our_package(_module, "https://raw.githubusercontent.com/mninc/automatic-v2/master/",
+                                            _version, directory):
+        installed_package = True
+if not update_checker.update_self(version, __file__,
+                                  "https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt",
+                                  "https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py",
+                                  install_updates):
+    install_updates = True
 
 if installed_package:
-    input("Please restart the program now.")
-    exit()
-
-# Check pytrade is up to date (can be removed later)
-pytrade_version = LooseVersion(pkg_resources.get_distribution("steam-trade").version)
-if LooseVersion("2.0.4") > pytrade_version:
-    pip.main(["install", "-U", "steam-trade"])
-    input("Package updated, please restart the program now.")
-    exit()
-
-# Check pytf2 is up to date (can be removed later)
-pytf2_version = LooseVersion(pkg_resources.get_distribution("pytf2").version)
-if LooseVersion("1.2.1") > pytf2_version:
-    pip.main(["install", "-U", "pytf2"])
-    input("Package updated, please restart the program now.")
+    input("Please restart the program to continue.")
     exit()
 
 import requests
 from pytrade import login, client, steam_enums
-from pytf2 import manager, item_data
+from pytf2 import item_data
+import settings
+import listener
+
 
 # Set up logging
-logging.basicConfig(filename="automatic.log", level=logging.DEBUG, format="%(asctime)s:%(levelname)s:%(message)s")
+logging.basicConfig(filename=directory + "/automatic.log", level=logging.DEBUG,
+                    format="%(asctime)s:%(levelname)s:%(message)s")
 logging.info("Program started")
-
-# Version number. This is compared to the github version number later
-version = "1.1.3"
-print("unofficial backpack.tf automatic v2 version " + version)
-logging.info("version: " + version)
-
-install_updates = True
-
-
-# Functions to be used anywhere
-class GlobalFuncs:
-    # Basic function to ask for a yes or no answer. Returns True for yes, False for no
-    @staticmethod
-    def check(ask):
-        while True:
-            text = input(ask).lower()[:1]
-            if text == "y":
-                return True
-            elif text == "n":
-                return False
-            else:
-                print("Please enter yes or no.")
-
-    # Basic function for guiding the user through the setup process by giving them a description of what to do and a
-    # website to do it at. Returns what is being looked for
-    @staticmethod
-    def show(url, instructions, thing):
-        ans = input("Please enter your " + thing + ". If you don't know where to find this enter 'help'.\n")
-        if ans != "help":
-            return ans
-        else:
-            print(instructions)
-            input("Press enter to go to this page.\n")
-            webbrowser.open(url, new=2, autoraise=True)
-            return input("Please enter your " + thing + ".\n")
-
-    # Process an input from a message - allows for future expansion with different input methods
-    @staticmethod
-    def process_command(command):
-        if command.startswith("change"):
-            # Change an item in the settings array
-            command = command[7:]
-            words = command.split(" ")
-            if len(words) == 1:
-                if words[0] in info.settings:
-                    print(str(info.settings[words[0]]))
-                else:
-                    print("Unexpected setting")
-            else:
-                info.update(words[0], words[1])
-        elif command.startswith("toggle"):
-            # Toggle a boolean in the settings array
-            command = command[7:]
-            for option in info.bools:
-                if command.startswith(option):
-                    info.update(option, not info.settings[option], toggle=True)
-        elif command.startswith("add"):
-            # Add a variable to a list
-            command = command[4:]
-            if command.startswith("owners"):
-                command = command[7:]
-                info.settings["owners"].append(command)
-                info.update("owners", info.settings["owners"])
-        elif command.startswith("remove"):
-            # Remove a variable from a list
-            command = command[7:]
-            if command.startswith("owners"):
-                command = command[7:]
-                if command in info.settings["owners"]:
-                    info.settings["owners"].remove(command)
-                    info.update("owners", info.settings["owners"])
-                else:
-                    print("This variable is not in that list")
-        elif command.startswith("help"):
-            print("Displaying the help page...")
-            print("""
-Commands:
-    help - Displays this message
-    change - Changes the setting specified to something else (eg 'change username newuser' would change your 
-                                                              username to 'newuser')
-             Leaving the value to change to will display the current value
-             Settings to change - username
-                                  password
-                                  apikey - backpack.tf api key
-                                  sapikey - steam api key
-                                  token - backpack.tf user token
-                                  identity_secret
-                                  sid - your steam id64
-                                  shared_secret 
-    toggle - Switches the setting from true to false or vice versa
-             To view the current value of the setting use the 'change' command
-             Settings to change - acceptgifts - accept trades where you lose no items
-                                  accept_any_sell_order - sell items from your inventory even if that specific item 
-                                                          doesn't have a listing. Setting this to false will stop any 
-                                                          possible bugs making you lose money when selling items
-                                  currency_exchange - allow users to pay with ref when you ask for keys or vice versa. 
-                                                      Uses the backpack.tf price by default
-                                  use_my_key_price - uses the price on your sell or buy listings for keys. 
-                                                     'currency_exchange' must be set to True for this to work
-                                  half_scraps - count craftable weapons as half a scrap - a list of these weapons is
-                                                available at 
-                                                https://github.com/mninc/automatic-v2/blob/master/halves.json
-                                                for viewing and curation
-    add - Adds a variable to a list. Lists can be displayed with the 'change' command
-          Settings to change - owners - a list of id64s whose offers will automatically be accepted
-    remove - Removes a variable from a list. This item must already be in the list for this to work
-             Settings to change - owners
-    """)
-
-        else:
-            print("I'm unsure what you mean.")
-
-    # Encryption methods
-
-    # Iterate through the encryption key
-    @staticmethod
-    def nextk(key2, num):
-        num += 1
-        if num >= len(key2):
-            num -= len(key2)
-        return num
-
-    # Encrypt a string
-    @staticmethod
-    def encrypt(key, string):
-        while len(string) % 4 != 0:
-            string += " "
-        while len(key) % 4 != 0:
-            key += " "
-
-        quarter = len(string) // 4
-        first = string[0:quarter]
-        second = string[quarter:2 * quarter]
-        third = string[2 * quarter:3 * quarter]
-        fourth = string[3 * quarter:4 * quarter]
-
-        quarter = len(key) // 4
-        first_k = key[0:quarter]
-        second_k = key[quarter:2 * quarter]
-        third_k = key[2 * quarter:3 * quarter]
-        fourth_k = key[3 * quarter:4 * quarter]
-
-        encrypted = []
-
-        number = 0
-        for char in first:
-            ec = ord(char) * ord(first_k[number])
-            encrypted.append(str(ec))
-            number = GlobalFuncs.nextk(first_k, number)
-
-        number = 0
-        for char in second:
-            ec = ord(char) * ord(second_k[number])
-            encrypted.append(str(ec))
-            number = GlobalFuncs.nextk(second_k, number)
-
-        number = 0
-        for char in third:
-            ec = ord(char) * ord(third_k[number])
-            encrypted.append(str(ec))
-            number = GlobalFuncs.nextk(third_k, number)
-
-        number = 0
-        for char in fourth:
-            ec = ord(char) * ord(fourth_k[number])
-            encrypted.append(str(ec))
-            number = GlobalFuncs.nextk(fourth_k, number)
-
-        encrypted = ",".join(encrypted)
-        return encrypted
-
-    # Decrypt a string
-    @staticmethod
-    def decrypt(key, encrypted):
-        while len(encrypted) % 4 != 0:
-            encrypted += " "
-        while len(key) % 4 != 0:
-            key += " "
-
-        string = encrypted.split(",")
-
-        quarter = len(string) // 4
-        first = string[0:quarter]
-        second = string[quarter:2 * quarter]
-        third = string[2 * quarter:3 * quarter]
-        fourth = string[3 * quarter:4 * quarter]
-
-        quarter = len(key) // 4
-        first_k = key[0:quarter]
-        second_k = key[quarter:2 * quarter]
-        third_k = key[2 * quarter:3 * quarter]
-        fourth_k = key[3 * quarter:4 * quarter]
-
-        unencrypted = ""
-
-        number = 0
-        for char in first:
-            uec = int(char) // ord(first_k[number])
-            unencrypted += chr(uec)
-            number = GlobalFuncs.nextk(first_k, number)
-
-        number = 0
-        for char in second:
-            uec = int(char) // ord(second_k[number])
-            unencrypted += chr(uec)
-            number = GlobalFuncs.nextk(second_k, number)
-
-        number = 0
-        for char in third:
-            uec = int(char) // ord(third_k[number])
-            unencrypted += chr(uec)
-            number = GlobalFuncs.nextk(third_k, number)
-
-        number = 0
-        for char in fourth:
-            uec = int(char) // ord(fourth_k[number])
-            unencrypted += chr(uec)
-            number = GlobalFuncs.nextk(fourth_k, number)
-
-        return unencrypted.strip()
-
+logging.info("version " + version)
 
 # Displays any text that needs displaying. For future use if needed
 display = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/print.txt").text
 print(display)
-
-
-# Listens for keystrokes without disrupting the main thread. This toggles all the options
-def listener():
-    chars = []
-    while True:
-        while not msvcrt.kbhit():
-            pass
-        letter = msvcrt.getche().decode("utf-8")
-        if letter == "\x08":
-            if len(chars) != 0:
-                del chars[len(chars)-1]
-        elif letter == "\r":
-            word = "".join(chars)
-            print("\n")
-            GlobalFuncs.process_command(word)
-            chars = []
-        else:
-            chars.append(letter)
-
-
-# Listener for non-windows systems
-def listener_unix():
-    chars = []
-    while True:
-        letter = getch()
-        back = False
-        if letter == "\x7f":
-            back = True
-            if len(chars) != 0:
-                del chars[len(chars)-1]
-        if letter == "\r":
-            word = "".join(chars)
-            print("\n")
-            GlobalFuncs.process_command(word)
-            chars = []
-        else:
-            if not back:
-                chars.append(letter)
-            print("".join(chars))
-
-
-# Checks if this is the most recent version
-if requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt").text.strip() != version\
-        and install_updates:
-    print("You are not running the current version of the program.")
-    print("You really should be. It's better. I promise.")
-    if GlobalFuncs.check("Want me to download it for you?\ny/n\n"):
-        # Downloads the new version
-        new = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py").content
-        with open("automatic.py", "wb") as script:
-            script.write(new)
-        print("Success!")
-        input("You should restart the bot now.")
-        exit()
-    else:
-        if GlobalFuncs.check("Want me to take you to the page so you can update it yourself?\ny/n\n"):
-            # Leads the user to the page to download the new version
-            input("I'll take you to the page when you press enter. Right-click the page, click Save As... and choose "
-                  "the correct file location.")
-            webbrowser.open("https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py", new=2,
-                            autoraise=True)
-            input("Once you've done that you can restart the bot.")
-            exit()
-    input("You can press enter to continue running the bot with this version or close the program now.")
-logging.info("Checked for updates")
 
 # Load some prebuilt half-scrap items and effect name to number reference
 halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").text)
@@ -372,164 +92,8 @@ killstreaks = item_data.killstreaks
 logging.info("Initialised variables")
 
 
-class Settings:
-    def __init__(self):
-        # The UNIX timestamp the last heartbeat was sent - setting this to 0 means a heartbeat is sent straight away
-        self.lasthb = 0
-        # Settings array
-        self.settings = {}
-        # Key for decrypting the settings file
-        self.key = None
-        # Variables in the settings that need to be True or False
-        self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price", "half_scraps",
-                      "decline_offers"]
-        # Default value of variables (for when the bot updates adding new options)
-        self.defaults = {"username": "",
-                         "password": "",
-                         "apikey": "",
-                         "sapikey": "",
-                         "token": "",
-                         "identity_secret": "",
-                         "shared_secret": None,
-                         "sid": "",
-                         "acceptgifts": False,
-                         "owners": [],
-                         "accept_any_sell_order": False,
-                         "currency_exchange": False,
-                         "use_my_key_price": False,
-                         "decline_offers": False,
-                         "half_scraps": False}
-        try:
-            # Open an unencrypted file
-            with open("settings.json", "r") as f:
-                self.settings = json.load(f)
-                logging.info("Loaded unencrypted file")
-        except (json.decoder.JSONDecodeError, UnicodeDecodeError):  # File is encrypted
-            with open("settings.json", "r") as f:
-                string = f.read()
-                try:
-                    self.key = input("Please enter your encryption key.\n")
-                    self.settings = json.loads(GlobalFuncs.decrypt(self.key, string))
-                    logging.info("Loaded encrypted file")
-                except json.decoder.JSONDecodeError:
-                    print("Could not decrypt settings file. Please check you entered your encryption key correctly. "
-                          "Note - the method of encryption recently changed. If you entered your details before "
-                          "23/12/2017 (12/23/2017) please visit read the readme here - "
-                          "https://github.com/mninc/automatic-v2/blob/master/README.md")
-                    logging.warning("Could not open settings file")
-                    input("Please press enter to quit.")
-                    exit()
-
-        except FileNotFoundError:  # File does not exist
-            print("Settings file not found!")
-            logging.info("Creating settings file")
-            if GlobalFuncs.check("want to make it?\ny/n\n"):
-                self.settings["username"] = input("Please enter the username to log into the account.\n")
-                self.settings["password"] = input("Please enter the password.\n")
-                self.settings["apikey"] = GlobalFuncs.show("https://backpack.tf/developer/apikey/view",
-                                                           "If you already have an apikey, copy it."
-                                                           " If not, you'll need to create one. "
-                                                           "You can leave out the site url and "
-                                                           "under comments you should write that "
-                                                           "this is for a trading bot. "
-                                                           "You will need elevated access to use "
-                                                           "this bot - request this and wait for "
-                                                           "it to be approved before continuing. ",
-                                                           "backpack.tf api key")
-                self.settings["sapikey"] = GlobalFuncs.show("https://steamcommunity.com/dev/apikey",
-                                                            "If you already have an apikey, copy it. "
-                                                            "If not, you'll need to create one. "
-                                                            "The domain name doesn't matter for this."
-                                                            "Once you have this, come back and paste "
-                                                            "it in.",
-                                                            "steam api key")
-                self.settings["token"] = GlobalFuncs.show("https://backpack.tf/connections",
-                                                          "Scroll down and click 'Show Token'. Copy this in.",
-                                                          "backpack.tf user token")
-                self.settings["identity_secret"] = GlobalFuncs.show("identity_secret url",
-                                                                    "This is difficult - you can follow the "
-                                                                    "instructions "
-                                                                    "on this page to get this, but it's likely you "
-                                                                    "won't. Leave this blank if you can't get it. If "
-                                                                    "you don't enter this, trades will not be confirmed"
-                                                                    " automatically.",
-                                                                    "identity secret")
-                self.settings["sid"] = GlobalFuncs.show("https://steamid.io/",
-                                                        "Enter the profile URL of the account and copy the "
-                                                        "'steamID64'.",
-                                                        "steam id64")
-                # Settings that are not set at the initialisation of the settings file
-                self.settings["shared_secret"] = None
-                self.settings["acceptgifts"] = False
-                self.settings["owners"] = []
-                self.settings["accept_any_sell_order"] = False
-                self.settings["currency_exchange"] = False
-                self.settings["use_my_key_price"] = False
-                self.settings["decline_offers"] = False
-                self.settings["half_scraps"] = False
-
-                # Get an encryption key
-                self.key = input("Please enter an encryption key to encrypt your data. You will have to enter this "
-                                 "every time you start the bot. If you do not want to encrypt this data, "
-                                 "leave this blank.\n")
-
-                logging.info("Created settings file")
-                if not self.key:  # File fill not be encrypted
-                    logging.info("Saved settings file unencrypted")
-                    with open("settings.json", "w") as f:
-                        json.dump(self.settings, f)
-                else:  # File will be encrypted
-                    logging.info("Saved settings file encrypted")
-                    with open("settings.json", "w") as f:
-                        _settings = json.dumps(self.settings)
-                        f.write(GlobalFuncs.encrypt(self.key, _settings))
-        if not self.settings:
-            input("Settings not present. Exiting program...")
-            exit()
-
-        for option in self.defaults:
-            if option not in self.settings:
-                self.update(option, self.defaults[option], toggle=True, admin=True)
-
-        self.tf2_manager = manager.Manager(bp_api_key=self.settings["apikey"])
-
-    def update(self, var, newval, toggle=False, admin=False):
-        if var in self.settings or admin:  # Check setting exists to be changed
-            if var not in self.bools or toggle:
-                # Checks we're not changing a boolean to something other than True or False
-                self.settings[var] = newval
-                if not self.key:  # File is not encrypted
-                    with open("settings.json", "w") as f:
-                        json.dump(self.settings, f)
-                else:  # File is encrypted
-                    with open("settings.json", "w") as f:
-                        _settings = json.dumps(self.settings)
-                        f.write(GlobalFuncs.encrypt(self.key, _settings))
-                if not admin:  # Don't display the update if this was a command initiated by the program
-                    print("Successfully updated " + var + ".")
-                logging.info("Updated " + var)
-            else:
-                # Trying to change a boolean to a string
-                print("This option is toggleable and cannot be manually set. Please use 'toggle' " + var + " instead.")
-        else:
-            print("That is not an option that can be changed.")
-
-    def search(self, name, unusual=False, set_elevated=False):
-        while True:
-            try:
-                return self.tf2_manager.bp_classifieds_search(
-                            self.tf2_manager.bp_classified_make_data(name, user=self.settings["sid"],
-                                                                     unusual=unusual,
-                                                                     set_elevated=set_elevated,
-                                                                     fold=0,
-                                                                     page_size=30), parse=False)
-            except Exception as e:
-                logging.warning("search: " + str(e))
-                time.sleep(randint(0, 5))
-
-
 # Initialise the settings
-info = Settings()
+info = settings.Settings()
 logging.info("Initialised settings")
 
 # Value of metal
@@ -569,11 +133,11 @@ trade_manager = client.TradeManager(info.settings["sid"], key=info.settings["sap
 logging.info("Initialised manager and steam client")
 
 if commands == "msv":
-    commandListener = threading.Thread(target=listener)
+    commandListener = threading.Thread(target=listener.listener, args=(info,))
     commandListener.start()
     logging.info("Started windows listener")
 elif commands == "get":
-    commandListener = threading.Thread(target=listener_unix)
+    commandListener = threading.Thread(target=listener.listener_unix, args=(info,))
     commandListener.start()
     logging.info("Started unix listener")
 
