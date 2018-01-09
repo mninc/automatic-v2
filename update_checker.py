@@ -2,7 +2,6 @@ import importlib
 import pip
 import pkg_resources
 from distutils.version import LooseVersion
-import basic_functions
 import webbrowser
 
 version = "1.0.0"
@@ -11,6 +10,7 @@ version = "1.0.0"
 def update_self(_version, file, version_location, script_location, install_updates):
     import requests
     if requests.get(version_location).text.strip() != version and install_updates:
+        import basic_functions
         print("You are not running the current version of the program.")
         print("You really should be. It's better. I promise.")
         if basic_functions.check("Want me to download it for you?\ny/n\n"):
