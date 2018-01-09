@@ -10,7 +10,8 @@ version = "1.0.0"
 
 
 class Settings:
-    def __init__(self):
+    def __init__(self, directory):
+        self.settings_path = directory + "/settings.json"
         # The UNIX timestamp the last heartbeat was sent - setting this to 0 means a heartbeat is sent straight away
         self.lasthb = 0
         # Settings array
@@ -38,21 +39,18 @@ class Settings:
                          "half_scraps": False}
         try:
             # Open an unencrypted file
-            with open("settings.json", "r") as f:
+            with open(self.settings_path, "r") as f:
                 self.settings = json.load(f)
                 logging.info("Loaded unencrypted file")
         except (json.decoder.JSONDecodeError, UnicodeDecodeError):  # File is encrypted
-            with open("settings.json", "r") as f:
+            with open(self.settings_path, "r") as f:
                 string = f.read()
                 try:
                     self.key = input("Please enter your encryption key.\n")
                     self.settings = json.loads(encryption.decrypt(self.key, string))
                     logging.info("Loaded encrypted file")
                 except json.decoder.JSONDecodeError:
-                    print("Could not decrypt settings file. Please check you entered your encryption key correctly. "
-                          "Note - the method of encryption recently changed. If you entered your details before "
-                          "23/12/2017 (12/23/2017) please visit read the readme here - "
-                          "https://github.com/mninc/automatic-v2/blob/master/README.md")
+                    print("Could not decrypt settings file.")
                     logging.warning("Could not open settings file")
                     input("Please press enter to quit.")
                     exit()
@@ -117,11 +115,11 @@ continue as normal.""")
                 logging.info("Created settings file")
                 if not self.key:  # File fill not be encrypted
                     logging.info("Saved settings file unencrypted")
-                    with open("settings.json", "w") as f:
+                    with open(self.settings_path, "w") as f:
                         json.dump(self.settings, f)
                 else:  # File will be encrypted
                     logging.info("Saved settings file encrypted")
-                    with open("settings.json", "w") as f:
+                    with open(self.settings_path, "w") as f:
                         _settings = json.dumps(self.settings)
                         f.write(encryption.encrypt(self.key, _settings))
         if not self.settings:
@@ -140,10 +138,10 @@ continue as normal.""")
                 # Checks we're not changing a boolean to something other than True or False
                 self.settings[var] = newval
                 if not self.key:  # File is not encrypted
-                    with open("settings.json", "w") as f:
+                    with open(self.settings_path, "w") as f:
                         json.dump(self.settings, f)
                 else:  # File is encrypted
-                    with open("settings.json", "w") as f:
+                    with open(self.settings_path, "w") as f:
                         _settings = json.dumps(self.settings)
                         f.write(encryption.encrypt(self.key, _settings))
                 if not admin:  # Don't display the update if this was a command initiated by the program

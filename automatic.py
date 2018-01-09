@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.0.0"
+version = "2.0.1"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -93,7 +93,7 @@ logging.info("Initialised variables")
 
 
 # Initialise the settings
-info = settings.Settings()
+info = settings.Settings(directory)
 logging.info("Initialised settings")
 
 # Value of metal
