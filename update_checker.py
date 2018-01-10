@@ -4,7 +4,7 @@ import pkg_resources
 from distutils.version import LooseVersion
 import webbrowser
 
-version = "1.0.1"
+version = "1.0.2"
 
 
 def update_self(_version, file, version_location, script_location, install_updates):
@@ -32,6 +32,7 @@ def update_self(_version, file, version_location, script_location, install_updat
                 exit()
         input("You can press enter to continue running the bot with this version or close the program now.")
         return True
+    return True
 
 
 def pypi(_module, alt):
