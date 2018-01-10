@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.0.1"
+version = "2.0.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -29,11 +29,11 @@ directory = os.path.dirname(os.path.abspath(__file__))
 # Packages to be checked for existence or version
 nondefault_packages = {"pytrade": "steam-trade", "requests": "requests", "pytf2": "pytf2"}
 force_version = {"steam-trade": "2.0.4", "pytf2": "1.2.1"}
-our_modules = {"encryption": "1.0.0", "basic_functions": "1.0.0", "settings": "1.0.0", "listener": "1.0.0",
-               "update_checker": "1.0.0"}
+our_modules = {"encryption": "1.0.0", "basic_functions": "1.0.0", "settings": "1.0.1", "listener": "1.0.0",
+               "update_checker": "1.0.1"}
 
 
-installed_package = False
+updated_self = False
 try:
     import update_checker
 except (ModuleNotFoundError, ImportError):
@@ -48,22 +48,19 @@ except (ModuleNotFoundError, ImportError):
     import update_checker
 
 for _module, alt in nondefault_packages.items():
-    if not update_checker.pypi(_module, alt):
-        installed_package = True
+    update_checker.pypi(_module, alt)
 for _module, _version in force_version.items():
-    if not update_checker.check_version(_module, _version):
-        installed_package = True
+    update_checker.check_version(_module, _version)
 for _module, _version in our_modules.items():
-    if not update_checker.check_our_package(_module, "https://raw.githubusercontent.com/mninc/automatic-v2/master/",
-                                            _version, directory):
-        installed_package = True
+    update_checker.check_our_package(_module, "https://raw.githubusercontent.com/mninc/automatic-v2/master/",
+                                     _version, directory)
 if not update_checker.update_self(version, __file__,
                                   "https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt",
                                   "https://raw.githubusercontent.com/mninc/automatic-v2/master/automatic.py",
                                   install_updates):
-    install_updates = True
+    updated_self = True
 
-if installed_package:
+if updated_self:
     input("Please restart the program to continue.")
     exit()
 
@@ -211,6 +208,18 @@ async def countered_trade(trade):
 async def changed_trade(trade):
     print("Trade " + trade.tradeofferid + " changed to an unexpected state")
     logging.debug("Unexpected state of trade " + trade.tradeofferid)
+
+
+@trade_manager.on("new_conf")
+async def new_conf(conf):
+    if info.settings["confirm_all"] and conf.creator not in info.accepting_offers:
+        response = await conf.confirm()
+        if not response[0]:
+            print("Error confirming trade: " + str(response[1]))
+            logging.warning("Error confirming trade: " + str(response[1]))
+        else:
+            print("Confirmed trade " + str(conf.creator) + ".")
+            logging.info("Confirmed trade " + str(conf.creator) + ".")
 
 
 @trade_manager.on("new_trade")
@@ -485,6 +494,7 @@ async def new_offer(offer):
         text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
         if accept:  # If we're accepting the offer
             try:
+                info.accepting_offers.append(offer.tradeofferid)
                 _offer = await offer.accept()
                 if _offer[0]:  # If the offer was accepted correctly
                     print("Offer Accepted: " + text)

@@ -4,7 +4,7 @@ import pkg_resources
 from distutils.version import LooseVersion
 import webbrowser
 
-version = "1.0.0"
+version = "1.0.1"
 
 
 def update_self(_version, file, version_location, script_location, install_updates):
@@ -37,12 +37,10 @@ def update_self(_version, file, version_location, script_location, install_updat
 def pypi(_module, alt):
     try:
         importlib.import_module(_module)
-        return True
     except (ImportError, ModuleNotFoundError):
         print("Package " + _module + " not found, installing now...")
         pip.main(["install", alt])
         print("Package installed.")
-        return False
 
 
 def check_version(_module, _version):
@@ -51,8 +49,6 @@ def check_version(_module, _version):
         print("Package " + _module + "not up to date. Updating now.")
         pip.main(["install", "-U", _module])
         print("Package updated.")
-        return False
-    return True
 
 
 def check_our_package(package, location, _version, directory):
@@ -69,5 +65,3 @@ def check_our_package(package, location, _version, directory):
             script = requests.get(url).content
             f.write(script)
         print("Download complete.")
-        return False
-    return True

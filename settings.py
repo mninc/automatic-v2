@@ -6,21 +6,21 @@ import time
 from random import randint
 from pytf2 import manager
 
-version = "1.0.0"
+version = "1.0.1"
 
 
 class Settings:
     def __init__(self, directory):
         self.settings_path = directory + "/settings.json"
+        # Trade offers we're accepting - used to know which confirmations we're not confirming manually when the option
+        # is set
+        self.accepting_offers = []
         # The UNIX timestamp the last heartbeat was sent - setting this to 0 means a heartbeat is sent straight away
         self.lasthb = 0
         # Settings array
         self.settings = {}
         # Key for decrypting the settings file
         self.key = None
-        # Variables in the settings that need to be True or False
-        self.bools = ["acceptgifts", "accept_any_sell_order", "currency_exchange", "use_my_key_price", "half_scraps",
-                      "decline_offers"]
         # Default value of variables (for when the bot updates adding new options)
         self.defaults = {"username": "",
                          "password": "",
@@ -36,7 +36,12 @@ class Settings:
                          "currency_exchange": False,
                          "use_my_key_price": False,
                          "decline_offers": False,
-                         "half_scraps": False}
+                         "half_scraps": False,
+                         "confirm_all": False}
+        self.bools = []
+        for option, value in self.defaults.items():
+            if type(value) is bool:
+                self.bools.append(option)
         try:
             # Open an unencrypted file
             with open(self.settings_path, "r") as f:
@@ -231,6 +236,8 @@ Commands:
                                                 available at 
                                                 https://github.com/mninc/automatic-v2/blob/master/halves.json
                                                 for viewing and curation
+                                  confirm_all - confirm trades even if they were not accepted by this bot (after trade 
+                                                is accepted manually)
     add - Adds a variable to a list. Lists can be displayed with the 'change' command
           Settings to change - owners - a list of id64s whose offers will automatically be accepted
     remove - Removes a variable from a list. This item must already be in the list for this to work
