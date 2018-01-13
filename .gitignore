@@ -2,3 +2,10 @@ settings.json
 test.py
 .idea/
 automatic.log
+
+
+basic_functions.py
+encryption.py
+listener.py
+settings.py
+update_checker.py
