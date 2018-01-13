@@ -1,0 +1,2 @@
+Want to suggest a feature to be added? See this page:
+https://github.com/mninc/automatic-v2/issues/3

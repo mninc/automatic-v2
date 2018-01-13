@@ -1,5 +1,5 @@
 # Imports
-import time
+from time import time
 import threading
 import os
 import asyncio
@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.0.3"
+version = "2.0.4"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -28,7 +28,7 @@ directory = os.path.dirname(os.path.abspath(__file__))
 
 # Packages to be checked for existence or version
 nondefault_packages = {"pytrade": "steam-trade", "requests": "requests", "pytf2": "pytf2"}
-force_version = {"steam-trade": "2.0.4", "pytf2": "1.2.1"}
+force_version = {"steam-trade": "2.0.5", "pytf2": "1.2.2"}
 our_modules = {"encryption": "1.0.0", "basic_functions": "1.0.0", "settings": "1.0.1", "listener": "1.0.0",
                "update_checker": "1.0.2"}
 
@@ -88,7 +88,6 @@ qualities = item_data.qualities
 killstreaks = item_data.killstreaks
 logging.info("Initialised variables")
 
-
 # Initialise the settings
 info = settings.Settings(directory)
 logging.info("Initialised settings")
@@ -109,6 +108,7 @@ except Exception as error:  # Api request failed - most likely because the api k
         info.update("token", input("Please enter your backpack.tf user token.\n"))
     elif change == "apikey":
         info.update("apikey", input("Please enter your backpack.tf api key.\n"))
+    input("Please restart the program now.")
     exit()
 logging.info("Loaded currency info")
 
@@ -147,7 +147,7 @@ async def logon():
 
 @trade_manager.on("end_poll")
 async def poll_end():
-    if time.time() - info.lasthb > 100:  # If it has been 100 seconds since sending the last heartbeat
+    if time() - info.lasthb > 100:  # If it has been 100 seconds since sending the last heartbeat
         try:
             bumped = info.tf2_manager.bp_send_heartbeat()
             logging.info("sent heartbeat")
@@ -158,7 +158,7 @@ async def poll_end():
         except Exception as e:
             print("Error sending heartbeat: " + str(e))
             logging.info("Error sending heartbeat: " + str(e))
-        info.lasthb = time.time()
+        info.lasthb = time()
 
 
 @trade_manager.on("poll_error")
@@ -227,7 +227,6 @@ async def new_offer(offer):
     # We haven't made a decision yet
     decline = False
     accept = False
-    leave = False  # Don't accept or decline the trade
     handled = False  # We know what to do with the trade
 
     # The names of the items in the trade for display later
@@ -493,54 +492,36 @@ async def new_offer(offer):
             losel.append(name + " x" + str(amount))
         text = "Receiving: " + ", ".join(receivel) + "; Losing: " + ", ".join(losel)
         if accept:  # If we're accepting the offer
-            try:
-                info.accepting_offers.append(offer.tradeofferid)
-                _offer = await offer.accept()
-                if _offer[0]:  # If the offer was accepted correctly
-                    print("Offer Accepted: " + text)
-                    logging.info("Offer Accepted: " + text)
-                else:  # The offer failed to be accepted for whatever reason
-                    print("Failed to accept offer: " + text)
-                    logging.warning("Failed to accept offer: " + text + "\n" + _offer[1])
-                    await offer.update()  # Reload trade
-                    if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
-                        print("Trying to accept offer again...")
-                        logging.info("Trying again...")
-                        _offer = await offer.accept()
-                        if _offer[0]:  # Accepting was successful
-                            print("Offer Accepted: " + text)
-                            logging.info("Offer Accepted: " + text)
-                        else:  # Failed to accept again
-                            print("Failed to accept offer again. Giving up.")
-                            print("Feel free to go and process the offer yourself.")
-                            logging.warning("giving up\n" + _offer[1])
-            except AttributeError:  # NoneType object has no attribute 'get'
-                print("There was an error accepting the trade.")
-                print("Logging in again...")
-                logging.warning("Error accepting trade")
-                loop.run_until_complete(asyncio.ensure_future(trade_manager.login(steam_client)))
-                time.sleep(2)
-                _offer = await offer.accept()
-                if _offer[0]:
-                    print("Offer Accepted: " + text)
-                    logging.info("Offer Accepted: " + text)
-                else:
-                    print("Failed to accept offer: " + text)
-                    logging.warning("Failed to accept offer: " + text + "\n" + _offer[1])
-
+            info.accepting_offers.append(offer.tradeofferid)
+            _offer = await offer.accept()
+            if _offer[0]:  # If the offer was accepted correctly
+                print("Offer Accepted: " + text)
+                logging.info("Offer Accepted: " + text)
+            else:  # The offer failed to be accepted for whatever reason
+                print("Failed to accept offer: " + text)
+                logging.warning("Failed to accept offer: " + text + "\n" + _offer[1])
+                await offer.update()  # Reload trade
+                if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
+                    print("Trying to accept offer again...")
+                    logging.info("Trying again...")
+                    _offer = await offer.accept()
+                    if _offer[0]:  # Accepting was successful
+                        print("Offer Accepted: " + text)
+                        logging.info("Offer Accepted: " + text)
+                    else:  # Failed to accept again
+                        print("Failed to accept offer again. Giving up.")
+                        print("Feel free to go and process the offer yourself.")
+                        logging.warning("giving up\n" + _offer[1])
         elif decline and info.settings["decline_offers"]:  # If we're declining the offer
             await offer.decline()
             print("Offer Declined: " + text)
             logging.info("Offer Declined: " + text)
-        elif leave:
-            print("Leaving offer. You can accept or decline this offer yourself.")
-            print(text)
         else:  # If the offer should have been declined
-            print("Offer was invalid, leaving: " + text)
+            print("Offer should be declined, leaving: " + text)
             print("Feel free to accept or decline this offer yourself.")
             logging.info("Offer was invalid, leaving:" + text)
     else:  # This should never happen
-        print("For some reason the offer was not accepted.")
+        print("For some reason the offer was not handled.")
         print("Please create an issue on github: https://github.com/mninc/automatic-v2/issues")
         logging.warning("offer missed")
 
@@ -550,7 +531,7 @@ while True:
     try:
         logging.info("running manager")
         trade_manager.run_forever()
-    except Exception as e:
+    except Exception as manager_error:
         logging.error("manager failed")
-        print("Received an error: " + str(e))
+        print("Received an error: " + str(manager_error))
         print("Continuing...")
