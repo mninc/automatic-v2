@@ -1,12 +1,10 @@
 import json
 import logging
+import encryption
+import basic_functions
 import time
 from random import randint
-
 from pytf2 import manager
-
-import encryption
-from functions import basic_functions
 
 version = "1.0.1"
 
