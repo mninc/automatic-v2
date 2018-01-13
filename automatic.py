@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.0.4"
+version = "2.0.5"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -42,7 +42,7 @@ except (ModuleNotFoundError, ImportError):
     except (ModuleNotFoundError, ImportError):
         pip.main(["install", "requests"])
         import requests
-    script = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/update_checker.py")
+    script = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/functions/update_checker.py")
     with open(directory + "/update_checker.py", "wb") as f:
         f.write(script.content)
     import update_checker
@@ -52,7 +52,7 @@ for _module, alt in nondefault_packages.items():
 for _module, _version in force_version.items():
     update_checker.check_version(_module, _version)
 for _module, _version in our_modules.items():
-    update_checker.check_our_package(_module, "https://raw.githubusercontent.com/mninc/automatic-v2/master/",
+    update_checker.check_our_package(_module, "https://raw.githubusercontent.com/mninc/automatic-v2/master/functions/",
                                      _version, directory)
 if not update_checker.update_self(version, __file__,
                                   "https://raw.githubusercontent.com/mninc/automatic-v2/master/__version__.txt",
@@ -82,7 +82,7 @@ display = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/mas
 print(display)
 
 # Load some prebuilt half-scrap items and effect name to number reference
-halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/halves.json").text)
+halves = eval(requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/data/halves.json").text)
 effects = item_data.effects
 qualities = item_data.qualities
 killstreaks = item_data.killstreaks
