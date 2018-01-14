@@ -1,4 +1,4 @@
-version = "1.0.0"
+version = "1.0.1"
 
 
 # Listens for keystrokes without disrupting the main thread. This toggles all the options
@@ -9,6 +9,8 @@ def listener(info):
         while not msvcrt.kbhit():
             pass
         letter = msvcrt.getche().decode("utf-8")
+        if letter == "\x03":
+            raise KeyboardInterrupt
         if letter == "\x08":
             if len(chars) != 0:
                 del chars[len(chars)-1]
@@ -39,6 +41,8 @@ def listener_unix(info):
     while True:
         letter = getch()
         back = False
+        if letter == "\x03":
+            raise KeyboardInterrupt
         if letter == "\x7f":
             back = True
             if len(chars) != 0:
