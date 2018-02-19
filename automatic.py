@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.0.9"
+version = "2.0.10"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
