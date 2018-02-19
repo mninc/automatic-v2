@@ -336,7 +336,7 @@ async def new_offer(offer):
                     else:
                         if name.startswith("The "):
                             name = name[4:]
-                        if name in halves and info.settings["half_scaps"]:
+                        if name in halves and info.settings["half_scraps"]:
                             gain_val += 1
                             logging.info(name + ": half-scrap")
                         else:
