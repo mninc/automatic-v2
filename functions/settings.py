@@ -4,9 +4,9 @@ import encryption
 import basic_functions
 import time
 from random import randint
-from pytf2 import manager
+import pytf2
 
-version = "1.0.1"
+version = "1.0.2"
 
 
 class Settings:
@@ -135,7 +135,7 @@ continue as normal.""")
             if option not in self.settings:
                 self.update(option, self.defaults[option], toggle=True, admin=True)
 
-        self.tf2_manager = manager.Manager(bp_api_key=self.settings["apikey"])
+        self.tf2_manager = pytf2.Manager(bp_api_key=self.settings["apikey"])
 
     def update(self, var, newval, toggle=False, admin=False):
         if var in self.settings or admin:  # Check setting exists to be changed
