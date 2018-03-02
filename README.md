@@ -9,7 +9,7 @@ Then, download `automatic.py` by going [here](https://raw.githubusercontent.com/
 Run the program in a command-line interface.
 
 The program will guide you through all the steps you need. It will also update itself (after asking you) when the time comes.
-One important thing to note is that elevated access to the backpack.tf apis is necessary to use this program.
+**One important thing to note is that elevated access to the backpack.tf apis is necessary to use this program.**
 
 You can use the `help` command to see all the commands you can use.
 
