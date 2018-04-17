@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.0.11"
+version = "2.1.0"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -28,7 +28,7 @@ directory = os.path.dirname(os.path.abspath(__file__))
 
 # Packages to be checked for existence or version
 nondefault_packages = {"pytrade": "steam-trade", "requests": "requests", "pytf2": "pytf2"}
-force_version = {"steam-trade": "2.0.7", "pytf2": "1.3.0"}
+force_version = {"steam-trade": "2.1.0", "pytf2": "1.3.0"}
 our_modules = {"encryption": "1.0.0", "basic_functions": "1.0.0", "settings": "1.0.2", "listener": "1.0.1",
                "update_checker": "1.0.2"}
 
@@ -65,7 +65,7 @@ if updated_self:
     exit()
 
 import requests
-from pytrade import login, client, steam_enums
+import pytrade
 from pytf2 import item_data
 import settings
 import listener
@@ -120,13 +120,16 @@ if info.settings["shared_secret"]:  # If shared secret is set
     shared_secret = info.settings["shared_secret"]
     while len(shared_secret) % 4 != 0:
         shared_secret += "="
-    steam_client = login.AsyncClient(info.settings["username"], info.settings["password"], shared_secret=shared_secret)
+    steam_client = pytrade.login.AsyncClient(info.settings["username"], info.settings["password"],
+                                             shared_secret=shared_secret)
 else:  # Shared secret is not set, use a one time code
-    steam_client = login.AsyncClient(info.settings["username"], info.settings["password"],
-                                     one_time_code=input("Please enter your steam guard one time code.\n"))
+    steam_client = pytrade.login.AsyncClient(info.settings["username"], info.settings["password"],
+                                             one_time_code=input("Please enter your steam guard one time code.\n"))
 
-trade_manager = client.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
-                                    identity_secret=identity_secret, poll_delay=10)
+trade_manager = pytrade.manager_trade.TradeManager(info.settings["sid"], key=info.settings["sapikey"],
+                                                   identity_secret=identity_secret, poll_delay=10)
+global_manager = pytrade.GlobalManager([trade_manager])
+
 logging.info("Initialised manager and steam client")
 
 if commands == "msv":
@@ -501,7 +504,7 @@ async def new_offer(offer):
                 print("Failed to accept offer: " + text)
                 logging.warning("Failed to accept offer: " + text + "\n" + _offer[1])
                 await offer.update()  # Reload trade
-                if offer.trade_offer_state == steam_enums.ETradeOfferState.Active:  # Offer is still active
+                if offer.trade_offer_state == pytrade.steam_enums.ETradeOfferState.Active:  # Offer is still active
                     print("Trying to accept offer again...")
                     logging.info("Trying again...")
                     _offer = await offer.accept()
@@ -530,7 +533,7 @@ loop.run_until_complete(asyncio.ensure_future(trade_manager.login(steam_client))
 while True:
     try:
         logging.info("running manager")
-        trade_manager.run_forever()
+        global_manager.run_forever()
     except Exception as manager_error:
         logging.error("manager failed")
         print("Received an error: " + str(manager_error))
