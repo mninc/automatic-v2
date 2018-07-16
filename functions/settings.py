@@ -62,12 +62,8 @@ class Settings:
 
         except FileNotFoundError:  # File does not exist
             print("Settings file not found!")
-            print("""Please note - on 09/01/2018 the location of the settings file was moved to where it should have
-been all along. If the settings file was found before then, please find the 'settings.json' file and copy it into
-the directory this script is in. It may be in a weird place (system directories etc). If you are just running this bot,
-continue as normal.""")
             logging.info("Creating settings file")
-            if basic_functions.check("want to make it?\ny/n\n"):
+            if basic_functions.check("Want to make it?\ny/n\n"):
                 self.settings["username"] = input("Please enter the username to log into the account.\n")
                 self.settings["password"] = input("Please enter the password.\n")
                 self.settings["apikey"] = basic_functions.show("https://backpack.tf/developer/apikey/view",
