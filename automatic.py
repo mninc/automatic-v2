@@ -3,7 +3,6 @@ from time import time
 import threading
 import os
 import asyncio
-import pip
 import logging
 import importlib
 commands = None
@@ -17,7 +16,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.1.2"
+version = "2.1.3"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -40,7 +39,13 @@ except (ModuleNotFoundError, ImportError):
     try:
         import requests
     except (ModuleNotFoundError, ImportError):
-        pip.main(["install", "requests"])
+        try:
+            import pip
+            main = pip.main
+        except AttributeError:
+            from pip._internal import main
+
+        main(["install", "requests"])
         import requests
     script = requests.get("https://raw.githubusercontent.com/mninc/automatic-v2/master/functions/update_checker.py")
     with open(directory + "/update_checker.py", "wb") as f:
