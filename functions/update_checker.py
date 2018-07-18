@@ -1,10 +1,15 @@
 import importlib
-import pip
 import pkg_resources
 from distutils.version import LooseVersion
 import webbrowser
 
-version = "1.0.2"
+try:
+    import pip
+    main = pip.main
+except AttributeError:
+    from pip._internal import main
+
+version = "1.0.3"
 
 
 def update_self(_version, file, version_location, script_location, install_updates):
@@ -40,7 +45,7 @@ def pypi(_module, alt):
         importlib.import_module(_module)
     except (ImportError, ModuleNotFoundError):
         print("Package " + _module + " not found, installing now...")
-        pip.main(["install", alt])
+        main(["install", alt])
         print("Package installed.")
 
 
@@ -48,7 +53,7 @@ def check_version(_module, _version):
     module_version = pkg_resources.get_distribution(_module).version
     if LooseVersion(module_version) < LooseVersion(_version):
         print("Package " + _module + "not up to date. Updating now.")
-        pip.main(["install", "-U", _module])
+        main(["install", "-U", _module])
         print("Package updated.")
 
 

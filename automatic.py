@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Version number. This is compared to the github version number later
-version = "2.1.1"
+version = "2.1.2"
 print("unofficial backpack.tf automatic v2 version " + version)
 
 # Update the main file
@@ -30,7 +30,7 @@ directory = os.path.dirname(os.path.abspath(__file__))
 nondefault_packages = {"pytrade": "steam-trade", "requests": "requests", "pytf2": "pytf2"}
 force_version = {"steam-trade": "2.1.0", "pytf2": "2.1.1"}
 our_modules = {"encryption": "1.0.0", "basic_functions": "1.0.0", "settings": "1.0.2", "listener": "1.0.1",
-               "update_checker": "1.0.2"}
+               "update_checker": "1.0.3"}
 
 
 updated_self = False
