@@ -21,6 +21,9 @@ Written entirely by me - hit me up on discord `manic#5170` or on my [steam profi
 
 Thanks to [Steam](http://store.steampowered.com) and [backpack.tf](http://www.backpack.tf) for their services and to [this library](https://github.com/Zwork101/steam-trade) by zwork for the main trading interface. 
 
+## Windows note
+If the program opens and shuts when you run it, try downloading [Microsoft Visual C++ 14.0](http://landinghub.visualstudio.com/visual-cpp-build-tools).
+
 ## Note on logging
 A detailed log is kept at `automatic.log`.
 
