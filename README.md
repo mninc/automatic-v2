@@ -1,5 +1,5 @@
 # automatic-v2
-The unofficial version 2 of backpack.tf automatic
+The unofficial version 2 of backpack.tf automatic. This project is archived and not under active development.
 
 ## How to use
 
